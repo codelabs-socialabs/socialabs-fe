@@ -1,4 +1,4 @@
-import { motion } from "motion/react"
+import { motion } from 'motion/react';
 
 const container = {
   hidden: {},
@@ -8,27 +8,27 @@ const container = {
       delayChildren: 0.2,
     },
   },
-} as const
+} as const;
 
 const item = {
   hidden: {
     opacity: 0,
     y: 16,
-    filter: "blur(4px)",
+    filter: 'blur(4px)',
   },
   show: {
     opacity: 1,
     scale: 1,
     y: 0,
-    filter: "blur(0px)",
+    filter: 'blur(0px)',
     transition: {
-      type: "spring",
+      type: 'spring',
       stiffness: 150,
       damping: 19,
       mass: 1.2,
     },
   },
-} as const
+} as const;
 
 function FadeContainer({
   children,
@@ -43,35 +43,35 @@ function FadeContainer({
     >
       {children}
     </motion.div>
-  )
+  );
 }
 
 function FadeDiv({
   children,
   className,
 }: {
-  children: React.ReactNode
-  className?: string
+  children: React.ReactNode;
+  className?: string;
 }) {
   return (
     <motion.div variants={item} className={className}>
       {children}
     </motion.div>
-  )
+  );
 }
 
 function FadeSpan({
   children,
   className,
 }: {
-  children: React.ReactNode
-  className?: string
+  children: React.ReactNode;
+  className?: string;
 }) {
   return (
     <motion.span variants={item} className={className}>
       {children}
     </motion.span>
-  )
+  );
 }
 
-export { FadeContainer, FadeDiv, FadeSpan }
+export { FadeContainer, FadeDiv, FadeSpan };
