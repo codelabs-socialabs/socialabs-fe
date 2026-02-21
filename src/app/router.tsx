@@ -43,6 +43,13 @@ export const router = createBrowserRouter([
       return { Component: module.default };
     },
   },
+  {
+    path: '*',
+    async lazy() {
+      const module = await import('@/components/pages/not-found-page');
+      return { Component: module.default };
+    },
+  },
 ]);
 
 export const AppRouter = () => {
