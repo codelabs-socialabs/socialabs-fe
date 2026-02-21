@@ -1,35 +1,47 @@
-import LoginPage from '@/components/pages/auth/login-page';
-import RegisterPage from '@/components/pages/auth/register-page';
-import AboutPage from '@/components/pages/landing/about-page';
-import FeaturePage from '@/components/pages/landing/feature-page';
-import LandingPage from '@/components/pages/landing/landing-page';
-import PricingPage from '@/components/pages/landing/pricing-page';
 import { createBrowserRouter, RouterProvider } from 'react-router';
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <LandingPage />,
+    async lazy() {
+      const module = await import('@/components/pages/landing/landing-page');
+      return { Component: module.default };
+    },
   },
   {
     path: '/pricing',
-    element: <PricingPage />,
+    async lazy() {
+      const module = await import('@/components/pages/landing/pricing-page');
+      return { Component: module.default };
+    },
   },
   {
     path: '/about',
-    element: <AboutPage />,
+    async lazy() {
+      const module = await import('@/components/pages/landing/about-page');
+      return { Component: module.default };
+    },
   },
   {
     path: '/feature',
-    element: <FeaturePage />,
+    async lazy() {
+      const module = await import('@/components/pages/landing/feature-page');
+      return { Component: module.default };
+    },
   },
   {
     path: '/login',
-    element: <LoginPage />,
+    async lazy() {
+      const module = await import('@/components/pages/auth/login-page');
+      return { Component: module.default };
+    },
   },
   {
     path: '/register',
-    element: <RegisterPage />,
+    async lazy() {
+      const module = await import('@/components/pages/auth/register-page');
+      return { Component: module.default };
+    },
   },
 ]);
 
