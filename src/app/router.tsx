@@ -44,6 +44,14 @@ export const router = createBrowserRouter([
     },
   },
   {
+    path: '/app',
+    async lazy() {
+      const module =
+        await import('@/components/pages/workspace/workspace-page');
+      return { Component: module.default };
+    },
+  },
+  {
     path: '*',
     async lazy() {
       const module = await import('@/components/pages/not-found-page');
