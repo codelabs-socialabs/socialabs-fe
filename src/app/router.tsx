@@ -52,6 +52,77 @@ export const router = createBrowserRouter([
     },
   },
   {
+    path: '/app/workspace/create',
+    async lazy() {
+      const module =
+        await import('@/components/pages/workspace/new-workspace-page');
+      return { Component: module.default };
+    },
+  },
+  {
+    path: '/app/workspace/setting',
+    async lazy() {
+      const module =
+        await import('@/components/pages/workspace/setting-workspace-page');
+      return { Component: module.default };
+    },
+  },
+  {
+    path: '/app/project',
+    async lazy() {
+      const module = await import('@/components/pages/project/project-page');
+      return { Component: module.default };
+    },
+  },
+  {
+    path: '/app/project/topic',
+    async lazy() {
+      const module =
+        await import('@/components/pages/project/topic-project-page');
+      return { Component: module.default };
+    },
+  },
+  {
+    path: '/app/project/sentiment',
+    async lazy() {
+      const module =
+        await import('@/components/pages/project/project-sentiment-page');
+      return { Component: module.default };
+    },
+  },
+  {
+    path: '/app/project/emotion',
+    async lazy() {
+      const module =
+        await import('@/components/pages/project/project-emotion-page');
+      return { Component: module.default };
+    },
+  },
+  {
+    path: '/app/project/chatbot',
+    async lazy() {
+      const module =
+        await import('@/components/pages/project/project-chatbot-page');
+      return { Component: module.default };
+    },
+  },
+  {
+    path: '/app/project/influencer',
+    async lazy() {
+      const module =
+        await import('@/components/pages/project/project-influencer-page');
+      return { Component: module.default };
+    },
+  },
+  {
+    path: '/app/project/sna',
+    async lazy() {
+      const module =
+        await import('@/components/pages/project/project-sna-page');
+      return { Component: module.default };
+    },
+  },
+  {
     path: '*',
     async lazy() {
       const module = await import('@/components/pages/not-found-page');
