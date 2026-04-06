@@ -23,110 +23,110 @@ import { Link } from 'react-router';
 
 const WorkspacePage = () => {
   // State Spaces
-  const [workspaces, setWorkspaces] = useState([
-    {
-      id: 1,
-      name: 'Socia Org',
-      description: 'Socia Description',
-      plan: 'pro', // default
-    },
-    {
-      id: 2,
-      name: 'Socia Org 1',
-      description: 'Socia Description',
-      plan: 'pro', // default
-    },
-  ]);
-  const [projects, setProjects] = useState([
-    {
-      id: 1,
-      name: 'MBG Prabowo Trend Monitoring',
-      description:
-        'Monitoring public sentiment and conversation spike related to MBG Prabowo across Twitter and online forums.',
-      createdAt: '2025-02-01',
-      keyword: 'mbg prabowo',
-      category: 'Politics',
-      language: 'id',
-      startDate: '2025-01-25',
-      endDate: '2025-02-05',
-      process: 'COMPLETED',
-      dataLimit: 30000,
-      tweetsRetrieved: 28432,
-      topicsCount: 18,
-    },
-    {
-      id: 2,
-      name: 'MBG Jatinangor Local Buzz Analysis',
-      description:
-        'Analyzing local buzz and viral conversation regarding MBG event in Jatinangor.',
-      createdAt: '2025-02-10',
-      keyword: 'mbg jatinangor',
-      category: 'Regional Issue',
-      language: 'id',
-      startDate: '2025-02-08',
-      endDate: '2025-02-20',
-      process: 'CRAWLING',
-      dataLimit: 20000,
-    },
-    {
-      id: 3,
-      name: 'MBG Policy Response Sentiment',
-      description:
-        'Tracking public reaction to MBG-related government policy discussions.',
-      createdAt: '2025-02-12',
-      keyword: 'mbg kebijakan pemerintah',
-      category: 'Public Policy',
-      language: 'id',
-      startDate: '2025-02-10',
-      endDate: '2025-02-25',
-      process: 'MODELING',
-      dataLimit: 25000,
-    },
-    {
-      id: 4,
-      name: 'MBG Social Media Trend Spike',
-      description:
-        'Identifying unusual spikes in mentions and engagement rate for MBG-related hashtags.',
-      createdAt: '2025-02-15',
-      keyword: 'mbg viral',
-      category: 'Trend Analysis',
-      language: 'mixed',
-      startDate: '2025-02-14',
-      endDate: '2025-02-28',
-      process: 'COMPLETED',
-      dataLimit: 40000,
-      tweetsRetrieved: 37620,
-      topicsCount: 22,
-    },
-    {
-      id: 5,
-      name: 'MBG Economic Impact Discussion',
-      description:
-        'Evaluating discussions on economic impact tied to MBG-related announcements.',
-      createdAt: '2025-02-18',
-      keyword: 'mbg ekonomi indonesia',
-      category: 'Economy',
-      language: 'id',
-      startDate: '2025-02-17',
-      endDate: '2025-03-01',
-      process: 'FAILED',
-      dataLimit: 15000,
-    },
-    {
-      id: 6,
-      name: 'MBG Campus Movement Monitoring',
-      description:
-        'Tracking university student reactions and activism trends regarding MBG.',
-      createdAt: '2025-02-20',
-      keyword: 'mbg mahasiswa bandung',
-      category: 'Education',
-      language: 'id',
-      startDate: '2025-02-19',
-      endDate: '2025-03-05',
-      process: 'CREATED',
-      dataLimit: 18000,
-    },
-  ]);
+  // const [workspaces, setWorkspaces] = useState([
+  //   {
+  //     id: 1,
+  //     name: 'Socia Org',
+  //     description: 'Socia Description',
+  //     plan: 'pro', // default
+  //   },
+  //   {
+  //     id: 2,
+  //     name: 'Socia Org 1',
+  //     description: 'Socia Description',
+  //     plan: 'pro', // default
+  //   },
+  // ]);
+  // const [projects, setProjects] = useState([
+  //   {
+  //     id: 1,
+  //     name: 'MBG Prabowo Trend Monitoring',
+  //     description:
+  //       'Monitoring public sentiment and conversation spike related to MBG Prabowo across Twitter and online forums.',
+  //     createdAt: '2025-02-01',
+  //     keyword: 'mbg prabowo',
+  //     category: 'Politics',
+  //     language: 'id',
+  //     startDate: '2025-01-25',
+  //     endDate: '2025-02-05',
+  //     process: 'COMPLETED',
+  //     dataLimit: 30000,
+  //     tweetsRetrieved: 28432,
+  //     topicsCount: 18,
+  //   },
+  //   {
+  //     id: 2,
+  //     name: 'MBG Jatinangor Local Buzz Analysis',
+  //     description:
+  //       'Analyzing local buzz and viral conversation regarding MBG event in Jatinangor.',
+  //     createdAt: '2025-02-10',
+  //     keyword: 'mbg jatinangor',
+  //     category: 'Regional Issue',
+  //     language: 'id',
+  //     startDate: '2025-02-08',
+  //     endDate: '2025-02-20',
+  //     process: 'CRAWLING',
+  //     dataLimit: 20000,
+  //   },
+  //   {
+  //     id: 3,
+  //     name: 'MBG Policy Response Sentiment',
+  //     description:
+  //       'Tracking public reaction to MBG-related government policy discussions.',
+  //     createdAt: '2025-02-12',
+  //     keyword: 'mbg kebijakan pemerintah',
+  //     category: 'Public Policy',
+  //     language: 'id',
+  //     startDate: '2025-02-10',
+  //     endDate: '2025-02-25',
+  //     process: 'MODELING',
+  //     dataLimit: 25000,
+  //   },
+  //   {
+  //     id: 4,
+  //     name: 'MBG Social Media Trend Spike',
+  //     description:
+  //       'Identifying unusual spikes in mentions and engagement rate for MBG-related hashtags.',
+  //     createdAt: '2025-02-15',
+  //     keyword: 'mbg viral',
+  //     category: 'Trend Analysis',
+  //     language: 'mixed',
+  //     startDate: '2025-02-14',
+  //     endDate: '2025-02-28',
+  //     process: 'COMPLETED',
+  //     dataLimit: 40000,
+  //     tweetsRetrieved: 37620,
+  //     topicsCount: 22,
+  //   },
+  //   {
+  //     id: 5,
+  //     name: 'MBG Economic Impact Discussion',
+  //     description:
+  //       'Evaluating discussions on economic impact tied to MBG-related announcements.',
+  //     createdAt: '2025-02-18',
+  //     keyword: 'mbg ekonomi indonesia',
+  //     category: 'Economy',
+  //     language: 'id',
+  //     startDate: '2025-02-17',
+  //     endDate: '2025-03-01',
+  //     process: 'FAILED',
+  //     dataLimit: 15000,
+  //   },
+  //   {
+  //     id: 6,
+  //     name: 'MBG Campus Movement Monitoring',
+  //     description:
+  //       'Tracking university student reactions and activism trends regarding MBG.',
+  //     createdAt: '2025-02-20',
+  //     keyword: 'mbg mahasiswa bandung',
+  //     category: 'Education',
+  //     language: 'id',
+  //     startDate: '2025-02-19',
+  //     endDate: '2025-03-05',
+  //     process: 'CREATED',
+  //     dataLimit: 18000,
+  //   },
+  // ]);
   const [activeWorkspace, setActiveWorkspace] = useState(null);
 
   // --- UI State ---

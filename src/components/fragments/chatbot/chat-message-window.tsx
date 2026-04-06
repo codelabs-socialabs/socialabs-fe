@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Copy, Check, Link } from 'lucide-react';

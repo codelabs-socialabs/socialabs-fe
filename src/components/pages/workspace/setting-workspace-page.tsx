@@ -17,20 +17,20 @@ import { Link } from 'react-router';
 
 const SettingWorkspacePage = () => {
   // State Spaces
-  const [workspaces, setWorkspaces] = useState([
-    {
-      id: 1,
-      name: 'Socia Org',
-      description: 'Socia Description',
-      plan: 'pro', // default
-    },
-    {
-      id: 2,
-      name: 'Socia Org 1',
-      description: 'Socia Description',
-      plan: 'pro', // default
-    },
-  ]);
+  // const [workspaces, setWorkspaces] = useState([
+  //   {
+  //     id: 1,
+  //     name: 'Socia Org',
+  //     description: 'Socia Description',
+  //     plan: 'pro', // default
+  //   },
+  //   {
+  //     id: 2,
+  //     name: 'Socia Org 1',
+  //     description: 'Socia Description',
+  //     plan: 'pro', // default
+  //   },
+  // ]);
   const [activeWorkspace, setActiveWorkspace] = useState(null);
   const [settingsTab, setSettingsTab] = useState('general'); // 'general' | 'usage'
 
