@@ -4,7 +4,7 @@ import socia from '@/assets/socia.png';
 import { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router';
 import {
-  Instagram,
+  Camera,
   Mail,
   MapPin,
   Music2,
@@ -298,7 +298,7 @@ const AboutPage = () => {
             </h3>
             <ul className="space-y-3 text-sm text-gray-700">
               <li className="flex items-center gap-2">
-                <Instagram size={20} className="text-red-500" />
+                <Camera size={20} className="text-red-500" />
                 <span>@socialabs</span>
               </li>
               <li className="flex items-center gap-2">

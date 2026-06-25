@@ -12,8 +12,8 @@ import {
   MapPin,
   Phone,
   Mail,
-  Instagram,
-  Twitter,
+  Camera,
+  Bird,
   Music2,
 } from 'lucide-react';
 import MarqueeRow from '../../ui/marquee-row';
@@ -375,11 +375,11 @@ const LandingPage = () => {
             </h3>
             <ul className="space-y-3 text-sm text-gray-700">
               <li className="flex items-center gap-2">
-                <Instagram size={20} className="text-red-500" />
+                <Camera size={20} className="text-red-500" />
                 <span>@socialabs</span>
               </li>
               <li className="flex items-center gap-2">
-                <Twitter size={20} className="text-red-500" />
+                <Bird size={20} className="text-red-500" />
                 <span>@socialabs</span>
               </li>
               <li className="flex items-center gap-2">

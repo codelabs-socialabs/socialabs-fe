@@ -1,17 +1,15 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { AppRouter } from './app/router';
+import { AppProvider } from './app/provider';
+import { Toaster } from '@/components/ui/sonner';
 import './index.css';
-import '@fontsource/geist/400.css';
-import '@fontsource/geist/500.css';
-import '@fontsource/geist/600.css';
-import '@fontsource/geist/700.css';
-import { App } from '@/app';
 
-const root = document.getElementById('root');
-if (!root) throw new Error('No root element found');
-
-createRoot(root).render(
+createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <AppProvider>
+      <AppRouter />
+      <Toaster />
+    </AppProvider>
   </StrictMode>,
 );
