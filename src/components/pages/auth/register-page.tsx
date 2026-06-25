@@ -1,11 +1,28 @@
 import { Eye, EyeOff, Lock, Mail, User, Users } from 'lucide-react';
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, Navigate } from 'react-router';
+import { useRegister, useAuth } from '@/features/auth/hooks';
 
 const RegisterPage = () => {
+  const { isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
-  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [fullname, setFullname] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const register = useRegister();
+
+  if (isAuthenticated) return <Navigate to="/app" replace />;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+    register.mutate({ fullname, email, password });
+  };
 
   return (
     <div className="flex min-h-screen bg-white">
@@ -149,7 +166,7 @@ const RegisterPage = () => {
               Join Socialab and start analyzing your performance.
             </p>
           </div>
-          <form action="" className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2.5">
               <label
                 htmlFor="fullname"
@@ -165,6 +182,8 @@ const RegisterPage = () => {
                   id="fullname"
                   type="text"
                   placeholder="Jhon Doe"
+                  value={fullname}
+                  onChange={(e) => setFullname(e.target.value)}
                   className="w-full pl-11 pr-4 py-3.5 text-sm text-slate-800  transition-all duration-200 bg-slate-50 border border-gray-200 rounded-md outline-none focus:bg-white focus:ring-4 focus:ring-[#d81b27]/15 focus:border-[#d81b27]"
                 />
               </div>
@@ -185,6 +204,8 @@ const RegisterPage = () => {
                   id="email"
                   type="text"
                   placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-11 pr-4 py-3.5 text-sm text-slate-800  transition-all duration-200 bg-slate-50 border border-gray-200 rounded-md outline-none focus:bg-white focus:ring-4 focus:ring-[#d81b27]/15 focus:border-[#d81b27]"
                 />
               </div>
@@ -205,6 +226,8 @@ const RegisterPage = () => {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Create a password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-11 pr-4 py-3.5 text-sm text-slate-800  transition-all duration-200 bg-slate-50 border border-gray-200 rounded-md outline-none focus:bg-white focus:ring-4 focus:ring-[#d81b27]/15 focus:border-[#d81b27]"
                 />
                 <button
@@ -236,6 +259,8 @@ const RegisterPage = () => {
                   id="passwordConfirm"
                   type={showPasswordConfirm ? 'text' : 'password'}
                   placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full pl-11 pr-4 py-3.5 text-sm text-slate-800  transition-all duration-200 bg-slate-50 border border-gray-200 rounded-md outline-none focus:bg-white focus:ring-4 focus:ring-[#d81b27]/15 focus:border-[#d81b27]"
                 />
                 <button
@@ -252,43 +277,18 @@ const RegisterPage = () => {
               </div>
             </div>
 
-            <div className="flex items-start pt-2">
-              <div className="flex items-center h-5">
-                <input
-                  id="terms"
-                  type="checkbox"
-                  checked={agreeTerms}
-                  onChange={(e) => setAgreeTerms(e.target.checked)}
-                  className="w-4 h-4 text-[#d81b27] bg-gray-50 border-gray-300 rounded cursor-pointer focus:ring-[#d81b27]"
-                  required
-                />
-              </div>
-              <label
-                htmlFor="terms"
-                className="ml-2.5 text-xs font-medium text-gray-600 cursor-pointer select-none leading-relaxed"
-              >
-                By signing up, you agree to our{' '}
-                <Link
-                  to="#terms"
-                  className="font-bold text-[#d81b27] hover:underline"
-                >
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link
-                  to="#privacy"
-                  className="font-bold text-[#d81b27] hover:underline"
-                >
-                  Privacy Policy
-                </Link>
-                .
-              </label>
-            </div>
+            {register.isError && (
+              <p className="text-sm text-red-600">
+                Registration failed. Please try again.
+              </p>
+            )}
+
             <button
               type="submit"
-              className="w-full cursor-pointer px-4 py-3.5 mt-2 text-sm font-semibold tracking-wide text-white transition-all duration-200 bg-[#d81b27] rounded-xl hover:bg-[#b3121d] hover:shadow-lg hover:shadow-[#d81b27]/25 focus:outline-none focus:ring-4 focus:ring-[#d81b27]/30 active:scale-[0.98]"
+              disabled={register.isPending}
+              className="w-full cursor-pointer px-4 py-3.5 mt-2 text-sm font-semibold tracking-wide text-white transition-all duration-200 bg-[#d81b27] rounded-xl hover:bg-[#b3121d] hover:shadow-lg hover:shadow-[#d81b27]/25 focus:outline-none focus:ring-4 focus:ring-[#d81b27]/30 active:scale-[0.98] disabled:opacity-50"
             >
-              Create Account
+              {register.isPending ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
           <p className="pt-4 text-sm text-gray-600">

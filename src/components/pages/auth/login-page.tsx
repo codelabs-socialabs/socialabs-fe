@@ -1,10 +1,17 @@
 import { Eye, EyeOff, Lock, Mail, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, Navigate } from 'react-router';
+import { useLogin, useAuth } from '@/features/auth/hooks';
 
 const LoginPage = () => {
+  const { isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const login = useLogin();
+
+  if (isAuthenticated) return <Navigate to="/app" replace />;
+
   return (
     <div className="flex min-h-screen bg-white">
       <div className="w-1/2 bg-red-600 relative overflow-hidden p-16 flex flex-col justify-between">
@@ -146,7 +153,13 @@ const LoginPage = () => {
               Welcome back! Let's track your social performance today.
             </p>
           </div>
-          <form action="" className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              login.mutate({ email, password });
+            }}
+            className="space-y-4"
+          >
             <div className="space-y-2.5">
               <label
                 htmlFor="email"
@@ -161,6 +174,8 @@ const LoginPage = () => {
                 <input
                   type="text"
                   placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-11 pr-4 py-3.5 text-sm text-slate-800  transition-all duration-200 bg-slate-50 border border-gray-200 rounded-md outline-none focus:bg-white focus:ring-4 focus:ring-[#d81b27]/15 focus:border-[#d81b27]"
                 />
               </div>
@@ -178,8 +193,10 @@ const LoginPage = () => {
                   <Lock className="w-5 h-5 text-slate-400" />
                 </div>
                 <input
-                  type={showPassword ? 'test' : 'password'}
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-11 pr-4 py-3.5 text-sm text-slate-800  transition-all duration-200 bg-slate-50 border border-gray-200 rounded-md outline-none focus:bg-white focus:ring-4 focus:ring-[#d81b27]/15 focus:border-[#d81b27]"
                 />
                 <button
@@ -201,8 +218,6 @@ const LoginPage = () => {
                 <input
                   id="remember-me"
                   type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 text-red-700 bg-gray-50 border-gray-300 cursor-pointer focus:ring-[#d81b27]"
                 />
                 <label
@@ -220,11 +235,19 @@ const LoginPage = () => {
                 Forgot Password
               </Link>
             </div>
+
+            {login.isError && (
+              <p className="text-sm text-red-600">
+                Login failed. Check your credentials.
+              </p>
+            )}
+
             <button
               type="submit"
-              className="w-full cursor-pointer px-4 py-3.5 mt-2 text-sm font-semibold tracking-wide text-white transition-all duration-200 bg-[#d81b27] rounded-xl hover:bg-[#b3121d] hover:shadow-lg hover:shadow-[#d81b27]/25 focus:outline-none focus:ring-4 focus:ring-[#d81b27]/30 active:scale-[0.98]"
+              disabled={login.isPending}
+              className="w-full cursor-pointer px-4 py-3.5 mt-2 text-sm font-semibold tracking-wide text-white transition-all duration-200 bg-[#d81b27] rounded-xl hover:bg-[#b3121d] hover:shadow-lg hover:shadow-[#d81b27]/25 focus:outline-none focus:ring-4 focus:ring-[#d81b27]/30 active:scale-[0.98] disabled:opacity-50"
             >
-              Sign in
+              {login.isPending ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
           <p className="pt-4 text-sm text-gray-600">
