@@ -75,3 +75,29 @@ export function useDeleteProject() {
     },
   });
 }
+
+export function useRecrawl() {
+  const queryClient = useQueryClient();
+  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+
+  return useMutation({
+    mutationFn: (projectId: string) =>
+      projectService.recrawl(activeWorkspaceId!, projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['projects', activeWorkspaceId],
+      });
+    },
+  });
+}
+
+export function useProjectAnalytics(projectId: string) {
+  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+
+  return useQuery({
+    queryKey: ['project-analytics', activeWorkspaceId, projectId],
+    queryFn: () => projectService.getAnalytics(activeWorkspaceId!, projectId),
+    enabled: !!activeWorkspaceId && !!projectId,
+    refetchInterval: 30000,
+  });
+}

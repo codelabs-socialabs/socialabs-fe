@@ -1,5 +1,10 @@
 import { apiClient } from '@/lib/api-client';
-import type { Project, CreateProjectRequest, ApiResponse } from './types';
+import type {
+  Project,
+  CreateProjectRequest,
+  ApiResponse,
+  ProjectAnalytics,
+} from './types';
 
 export const projectService = {
   async getList(workspaceId: string): Promise<Project[]> {
@@ -29,5 +34,21 @@ export const projectService = {
 
   async delete(workspaceId: string, projectId: string): Promise<void> {
     await apiClient.delete(`/workspaces/${workspaceId}/projects/${projectId}`);
+  },
+
+  async recrawl(workspaceId: string, projectId: string): Promise<void> {
+    await apiClient.post(
+      `/workspaces/${workspaceId}/projects/${projectId}/recrawl`,
+    );
+  },
+
+  async getAnalytics(
+    workspaceId: string,
+    projectId: string,
+  ): Promise<ProjectAnalytics> {
+    const res = await apiClient.get<ApiResponse<ProjectAnalytics>>(
+      `/workspaces/${workspaceId}/projects/${projectId}/analytics`,
+    );
+    return res.data.data;
   },
 };

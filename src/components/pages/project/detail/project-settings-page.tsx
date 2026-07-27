@@ -1,10 +1,11 @@
 import { useParams, useNavigate } from 'react-router';
-import { Trash2 } from 'lucide-react';
+import { RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import {
   useProject,
   useDeleteProject,
+  useRecrawl,
   extractProjectId,
 } from '@/features/project/hooks';
 import {
@@ -24,6 +25,7 @@ export default function ProjectSettingsPage() {
   const navigate = useNavigate();
   const { data: project, isLoading } = useProject(id!);
   const deleteProject = useDeleteProject();
+  const recrawl = useRecrawl();
   const [deleteConfirm, setDeleteConfirm] = useState('');
 
   if (isLoading) {
@@ -44,6 +46,13 @@ export default function ProjectSettingsPage() {
         toast.success('Project deleted');
       },
       onError: () => toast.error('Failed to delete project'),
+    });
+  };
+
+  const handleRecrawl = () => {
+    recrawl.mutate(id!, {
+      onSuccess: () => toast.success('Recrawl started'),
+      onError: () => toast.error('Failed to start recrawl'),
     });
   };
 
@@ -106,6 +115,35 @@ export default function ProjectSettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Recrawl */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-start gap-3">
+            <RefreshCw size={20} className="mt-1" />
+            <div>
+              <CardTitle>Recrawl</CardTitle>
+              <CardDescription>
+                Re-run the crawling process to fetch new tweets
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-slate-500 mb-4">
+            This will reset tweet counts and start a new crawl. Existing tweets
+            will be kept.
+          </p>
+          <Button onClick={handleRecrawl} disabled={recrawl.isPending}>
+            <RefreshCw
+              size={14}
+              className={recrawl.isPending ? 'animate-spin' : ''}
+            />
+            {recrawl.isPending ? 'Starting...' : 'Start Recrawl'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Delete */}
       <Card className="border border-red-200">
         <CardHeader>
           <div className="flex items-start gap-3">

@@ -1,13 +1,41 @@
 import { useParams } from 'react-router';
-import { useProject, extractProjectId } from '@/features/project/hooks';
+import {
+  useProject,
+  extractProjectId,
+  useProjectAnalytics,
+} from '@/features/project/hooks';
 import { BarChart3, TrendingUp, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from '@/components/ui/chart';
+import {
+  Bar,
+  BarChart,
+  Line,
+  LineChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from 'recharts';
+
+const chartConfig = {
+  count: { label: 'Tweets', color: 'hsl(var(--primary))' },
+  likes: { label: 'Likes', color: 'hsl(var(--chart-1))' },
+  retweets: { label: 'Retweets', color: 'hsl(var(--chart-2))' },
+  replies: { label: 'Replies', color: 'hsl(var(--chart-3))' },
+};
 
 export default function ProjectOverviewPage() {
   const { id: rawId } = useParams<{ id: string }>();
   const id = extractProjectId(rawId!);
   const { data: project, isLoading } = useProject(id!);
+  const { data: analytics } = useProjectAnalytics(id!);
 
   if (isLoading) {
     return (
@@ -132,6 +160,96 @@ export default function ProjectOverviewPage() {
           </div>
         </CardContent>
       </Card>
+
+      {analytics && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Tweets Over Time</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-[250px]">
+                <LineChart data={analytics.tweetsOverTime}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                  <YAxis />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    stroke="var(--color-count)"
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Top Users</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-[250px]">
+                <BarChart data={analytics.topUsers} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis
+                    type="category"
+                    dataKey="userId"
+                    tick={{ fontSize: 12 }}
+                    width={80}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="count" fill="var(--color-count)" />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Engagement</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-[250px]">
+                <BarChart data={analytics.engagement}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                  <YAxis />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <Bar dataKey="likes" fill="var(--color-likes)" />
+                  <Bar dataKey="retweets" fill="var(--color-retweets)" />
+                  <Bar dataKey="replies" fill="var(--color-replies)" />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Top Keywords</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-[250px]">
+                <BarChart data={analytics.topKeywords} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis
+                    type="category"
+                    dataKey="keyword"
+                    tick={{ fontSize: 12 }}
+                    width={80}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="count" fill="var(--color-count)" />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

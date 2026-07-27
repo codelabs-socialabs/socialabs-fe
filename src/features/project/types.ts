@@ -45,3 +45,38 @@ export interface ApiResponse<T> {
   status: boolean;
   data: T;
 }
+
+export interface TweetOverTime {
+  date: string;
+  count: number;
+}
+
+export interface EngagementData {
+  date: string;
+  likes: number;
+  retweets: number;
+  replies: number;
+}
+
+export interface LanguageData {
+  lang: string;
+  count: number;
+}
+
+export interface KeywordData {
+  keyword: string;
+  count: number;
+}
+
+export interface UserData {
+  userId: string;
+  count: number;
+}
+
+export interface ProjectAnalytics {
+  tweetsOverTime: TweetOverTime[];
+  engagement: EngagementData[];
+  languages: LanguageData[];
+  topUsers: UserData[];
+  topKeywords: KeywordData[];
+}
