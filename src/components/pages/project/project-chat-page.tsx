@@ -1,0 +1,244 @@
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+
+import ChatHeaderContext from '@/components/fragments/chatbot/chat-header-context';
+import ChatInputBar from '@/components/fragments/chatbot/chat-input-bar';
+import ChatMessageWindow from '@/components/fragments/chatbot/chat-message-window';
+import type { ChatMessage } from '@/components/fragments/chatbot/chat-message-window';
+import SidebarChatbot from '@/components/fragments/chatbot/sidebar-chatbot';
+import SmartSuggestionGrid from '@/components/fragments/chatbot/smart-suggestion-grid';
+
+const MOCK_AI_RESPONSES: Record<string, Omit<ChatMessage, 'id' | 'role'>> = {
+  'Apa insight utama dari data ini?': {
+    content: `### Executive Summary
+Percakapan didominasi oleh keluhan terkait **kenaikan harga** dan **lambannya respons kebijakan publik**.
+
+### Key Data Points
+- Topik "Harga Produk" menyumbang **28%** dari total percakapan.
+- **Sentimen negatif mencapai 62%**, meningkat 15% dari bulan sebelumnya.
+- **Puncak interaksi** terjadi pada 12 Februari setelah pengumuman APBN.
+
+### Recommendation
+Fokuskan mitigasi komunikasi pada klaster audiens menengah ke bawah yang paling aktif merespons isu harga sembako.`,
+    sources: ['Topic Modeling', 'Sentiment Trend', 'Community Clustering'],
+  },
+
+  'Siapa influencer utama dalam diskusi ini?': {
+    content: `### Top Structural Influencers
+Berdasarkan perhitungan _Betweenness Centrality_, influencer paling berdampak bukan akun dengan pengikut terbanyak, melainkan **@AktivisLokal**.
+
+### Why Important?
+- **Role:** Bridge
+- **Impact:** Menghubungkan diskusi antara "*Klaster Mahasiswa*" dan "*Klaster Pekerja Publik*".
+- **Engagement Level:** 12.5%
+
+Akun dengan pengikut terbesar, **@BeritaUpdate**, hanya memiliki peran _Amplifier_ dengan degree centrality menengah.`,
+    sources: ['Influencer Analysis', 'Network Density'],
+  },
+
+  'Topik apa yang meningkat pada minggu kedua Februari?': {
+    content: `Pada minggu kedua Februari, 8–14 Februari, terdapat lonjakan anomali pada topik **"Kualitas Infrastruktur Jalan"** sebesar **+412%**.
+
+Lonjakan ini dipicu oleh unggahan viral dari klaster *Regional Sumatera* yang mendapatkan amplifikasi organik secara masif.`,
+    sources: ['Topic Modeling', 'Timeline Trends'],
+  },
+
+  DEFAULT: {
+    content: `### Analisis Diproses
+Saya telah memindai dataset sebanyak **35.420 dokumen**. Namun, pertanyaan tersebut terlalu spesifik atau berada di luar cakupan data yang saat ini terindeks.
+
+Silakan sesuaikan pertanyaan atau gunakan salah satu **Smart Suggestions** yang tersedia.`,
+  },
+};
+
+const ProjectChatbotPage = () => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const pendingResponseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  const scrollToBottom = (): void => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'end',
+    });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
+
+  useEffect(() => {
+    return () => {
+      if (pendingResponseTimerRef.current) {
+        clearTimeout(pendingResponseTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleSendMessage = (text: string): void => {
+    const normalizedText = text.trim();
+
+    if (!normalizedText || isLoading) {
+      return;
+    }
+
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: normalizedText,
+    };
+
+    setMessages((currentMessages) => [...currentMessages, userMessage]);
+
+    setIsLoading(true);
+
+    pendingResponseTimerRef.current = setTimeout(() => {
+      const responseTemplate =
+        MOCK_AI_RESPONSES[normalizedText] ?? MOCK_AI_RESPONSES.DEFAULT;
+
+      const assistantMessage: ChatMessage = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        ...responseTemplate,
+      };
+
+      setMessages((currentMessages) => [...currentMessages, assistantMessage]);
+
+      setIsLoading(false);
+      pendingResponseTimerRef.current = null;
+    }, 1500);
+  };
+
+  return (
+    <div className="flex h-full min-h-0 w-full overflow-hidden bg-white">
+      {/* Chat history sidebar */}
+      <div
+        className={`h-full shrink-0 overflow-hidden bg-white transition-[width] duration-300 ease-in-out ${
+          isSidebarOpen ? 'w-60' : 'w-0'
+        }`}
+      >
+        <div
+          className={`h-full w-60 transition-transform duration-300 ease-in-out ${
+            isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <SidebarChatbot isOpen={isSidebarOpen} />
+        </div>
+      </div>
+
+      {/* Main chat area */}
+      <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+        {/* Sidebar toggle */}
+        <div className="absolute left-4 top-4 z-20">
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen((current) => !current)}
+            aria-label={
+              isSidebarOpen ? 'Close chat sidebar' : 'Open chat sidebar'
+            }
+            title={isSidebarOpen ? 'Close Sidebar' : 'Open Sidebar'}
+            className="rounded-lg border border-slate-200 bg-white/90 p-2 text-slate-400 shadow-sm backdrop-blur-sm transition hover:bg-slate-50 hover:text-slate-900"
+          >
+            {isSidebarOpen ? (
+              <PanelLeftClose size={19} />
+            ) : (
+              <PanelLeftOpen size={19} />
+            )}
+          </button>
+        </div>
+
+        {/* Scrollable messages */}
+        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-3xl px-6 pb-40 pt-16 sm:px-8">
+            {messages.length === 0 ? (
+              <div className="flex w-full flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Greeting */}
+                <div className="mt-12 flex shrink-0 flex-col items-center justify-center text-center">
+                  <div className="flex size-12 items-center justify-center rounded-2xl bg-slate-900 text-lg font-semibold text-white">
+                    S
+                  </div>
+
+                  <h1 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950">
+                    Hello, I&apos;m SociaBot
+                  </h1>
+
+                  <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                    Ask questions about your project dataset, explore trends,
+                    inspect sentiment, and discover the actors shaping the
+                    conversation.
+                  </p>
+                </div>
+
+                {/* Context */}
+                <div className="mt-8 w-full">
+                  <ChatHeaderContext />
+                </div>
+
+                {/* Suggestions */}
+                <div className="mt-8 w-full">
+                  <SmartSuggestionGrid onSelectPrompt={handleSendMessage} />
+                </div>
+              </div>
+            ) : (
+              <div className="flex w-full flex-col py-6">
+                {messages.map((message, index) => {
+                  const isLastAssistantMessage =
+                    index === messages.length - 1 &&
+                    message.role === 'assistant';
+
+                  return (
+                    <ChatMessageWindow
+                      key={message.id}
+                      message={message}
+                      isTyping={isLastAssistantMessage}
+                    />
+                  );
+                })}
+
+                {isLoading && (
+                  <div className="mb-8 flex w-full animate-in fade-in duration-300">
+                    <div className="flex items-center gap-2">
+                      <div className="flex size-8 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+                        S
+                      </div>
+
+                      <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                        <span className="size-1.5 animate-pulse rounded-full bg-slate-400" />
+
+                        <span className="size-1.5 animate-pulse rounded-full bg-slate-400 [animation-delay:100ms]" />
+
+                        <span className="size-1.5 animate-pulse rounded-full bg-slate-400 [animation-delay:200ms]" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Input area */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-white via-white to-transparent pb-6 pt-12">
+          <div className="pointer-events-auto mx-auto w-full max-w-3xl px-6 sm:px-8">
+            <ChatInputBar
+              onSendMessage={handleSendMessage}
+              isLoading={isLoading}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProjectChatbotPage;

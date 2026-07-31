@@ -1,25 +1,10 @@
-import React from 'react';
-import logo from '@/assets/socialabs-logo.png';
-import {
-  Share2,
-  Download,
-  ChevronDown,
-  HelpCircle,
-  ArrowLeft,
-  MessageSquare,
-  Network,
-  User,
-  Smile,
-  TrendingUp,
-  BrainCircuit,
-  LayoutDashboard,
-} from 'lucide-react';
+import { Download, Share2 } from 'lucide-react';
+
+import InfluencerRankingTable from '@/components/fragments/influencer/influencer-ranking-table';
 import InfluencerSnapshot from '@/components/fragments/influencer/influencer-snaphot';
 import RoleClassification from '@/components/fragments/influencer/role-classification';
-import InfluencerRankingTable from '@/components/fragments/influencer/influencer-ranking-table';
 
-const InfluencerPage: React.FC = () => {
-  // Mock data for the snapshot
+const InfluencerPage = () => {
   const snapshotMetrics = {
     totalAccounts: 12430,
     activeInfluencers: 214,
@@ -30,189 +15,55 @@ const InfluencerPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen max-h-screen bg-slate-50 text-slate-900">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col z-20 justify-between">
-        <div>
-          {/* Brand Socialabs */}
-          <div className="flex items-center justify-center h-16 border-b border-slate-100 w-full">
-            <div className="flex items-center gap-2.5">
-              <img src={logo} alt="" className="w-7 h-7" />
-              <div className="text-2xl font-semibold tracking-wider">
-                Socialabs
-              </div>
-            </div>
+    <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
+      <div className="space-y-6 pb-10">
+        {/* Page header */}
+        <header className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+              Socia Influencer
+            </h1>
+
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500">
+              Identify the accounts shaping the narrative. Go beyond follower
+              counts to discover who originates, amplifies, and connects
+              conversations across the network.
+            </p>
           </div>
 
-          {/* Current Project */}
-          <div className="p-5 border-b border-slate-50">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-              Current Project
-            </div>
-            <div className="text-sm font-bold text-slate-800 leading-tight line-clamp-2">
-              {'Project A'}
-            </div>
-          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <Share2 size={16} />
+              Share
+            </button>
 
-          {/* Navigasi */}
-          <div className="flex-1 overflow-y-auto py-4">
-            {/* Dashboard */}
-            <div className="px-3 space-y-0.5">
-              <div className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                Dashboard
-              </div>
-              <button
-                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all bg-red-50 text-red-700 shadow-sm border border-red-100/50`}
-              >
-                <LayoutDashboard size={18} className={'text-red-600'} />
-                Overview
-              </button>
-            </div>
-            {/* AI Analyst */}
-            <div className="px-3 space-y-0.5 mt-6">
-              <div className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                AI ANALYTICS
-              </div>
-              <button
-                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent`}
-              >
-                <BrainCircuit size={18} className={'text-slate-400'} />
-                Topic Modeling
-              </button>
-              <button
-                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent`}
-              >
-                <TrendingUp size={18} className={'text-slate-400'} />
-                Sentiment Trend
-              </button>
-              <button
-                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent`}
-              >
-                <Smile size={18} className={'text-slate-400'} />
-                Emotion Analysis
-              </button>
-            </div>
-            {/* Network And Actor */}
-            <div className="px-3 space-y-0.5 mt-6">
-              <div className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                NETWORK & ACTOR
-              </div>
-              <button
-                className={`w-full flex text-start items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent`}
-              >
-                <User size={18} className={'text-slate-400'} />
-                Influencer Recommendation
-              </button>
-              <button
-                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent`}
-              >
-                <Network size={18} className={'text-slate-400'} />
-                Community Detection
-              </button>
-            </div>
-            {/* Assistant */}
-            <div className="px-3 space-y-0.5 mt-6">
-              <div className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                ASSISTANT
-              </div>
-              <button
-                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent`}
-              >
-                <MessageSquare size={18} className={'text-slate-400'} />
-                Chatbot
-              </button>
-            </div>
-          </div>
-        </div>
-        {/* Back Workspace */}
-        <div className="p-4 border-t border-slate-200 shrink-0 bg-white">
-          <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors group shadow-sm">
-            <ArrowLeft
-              size={16}
-              className="text-slate-400 group-hover:text-slate-600 group-hover:-translate-x-1 transition-transform"
-            />
-            Back to Workspace
-          </button>
-        </div>
-      </aside>
-      {/* Main Content */}
-      <div className="flex-1 overflow-y flex flex-col overflow-hidden relative">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10 sticky top-0">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="font-medium text-slate-500 hover:text-slate-800 cursor-pointer transition-colors">
-              {'Project Workspace'}
-            </span>
-            <span className="text-slate-300 font-medium">/</span>
-            <span className="font-medium text-slate-500 hover:text-slate-800 cursor-pointer transition-colors">
-              {'Project Name'}
-            </span>
-            <span className="text-slate-300 font-medium">/</span>
-            <span className="font-semibold text-slate-900 capitalize">
-              Overview
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center mr-2 border-r border-slate-200 pr-2">
-              <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors focus:outline-none">
-                <HelpCircle size={18} />
-              </button>
-            </div>
-            {/* User Profile */}
-            <div className="relative">
-              <button className="flex items-center gap-2 hover:bg-slate-50 rounded-lg p-1.5 border border-transparent hover:border-slate-200 focus:outline-none">
-                <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-white">
-                  <span className="text-xs font-semibold">UA</span>
-                </div>
-                <div className="flex flex-col items-start px-1">
-                  <span className="text-sm font-medium text-slate-800 leading-none mb-1">
-                    User Analyst
-                  </span>
-                  <span className="text-[10px] text-slate-500 leading-none">
-                    Free Plan
-                  </span>
-                </div>
-                <ChevronDown size={14} className={`text-slate-400`} />
-              </button>
-            </div>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+            >
+              <Download size={16} />
+              Export CSV
+            </button>
           </div>
         </header>
 
-        <div className="max-w-7xl p-8 mx-auto space-y-8 animate-in fade-in duration-500 pb-10">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-            <div>
-              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
-                Socia Influencer
-              </h1>
-              <p className="text-sm text-slate-500 max-w-2xl">
-                Identify structural impact in the narrative. Move beyond mere
-                follower counts to discover who actually originates, amplifies,
-                and bridges the conversation.
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
-                <Share2 className="w-4 h-4 text-slate-500" />
-                <span>Share</span>
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 border border-transparent text-white text-sm font-medium rounded-lg hover:bg-black transition-colors shadow-sm">
-                <Download className="w-4 h-4" />
-                <span>Export CSV</span>
-              </button>
-            </div>
-          </div>
-
-          {/* 1. Influencer Snapshot */}
+        {/* Influencer snapshot */}
+        <section>
           <InfluencerSnapshot metrics={snapshotMetrics} />
+        </section>
 
-          {/* 2. Content Grid (Roles) */}
-          <div className="w-full">
-            <RoleClassification />
-          </div>
+        {/* Role classification */}
+        <section className="w-full">
+          <RoleClassification />
+        </section>
 
-          {/* 3. The Core Data Table */}
+        {/* Ranking table */}
+        <section className="w-full">
           <InfluencerRankingTable />
-        </div>
+        </section>
       </div>
     </div>
   );
