@@ -1,471 +1,342 @@
-import {
-  AlignLeft,
-  BadgeCheck,
-  Download,
-  Hash,
-  Heart,
-  MessageSquare,
-  Minus,
-  Share2,
-  TrendingDown,
-  TrendingUp,
-  X,
-} from 'lucide-react';
+import { BrainCircuit, Database, ExternalLink, Hash, X } from 'lucide-react';
 import { useState } from 'react';
+import { useParams } from 'react-router';
 
-const TopicProjectPage = () => {
-  const [selectedTopicId, setSelectedTopicId] = useState<string>('t1');
+import { useProjectStore } from '@/stores/project-store';
+import { useProjectTopics } from '@/hooks/use-project-topics';
+import { useTopicDocuments } from '@/hooks/use-topic-documents';
+import type { Topic } from '@/types/project';
 
-  const topics = [
-    {
-      id: 't1',
-      name: 'Food Quality & Portion Complaints',
-      volume: '8,452',
-      trend: 'up',
-      trendLabel: 'Trending Up',
-      keywords: [
-        'basi',
-        'keras',
-        'porsi dikit',
-        'sayur layu',
-        'gak layak',
-        'kualitas',
-        'ayam',
-      ],
-      aiSummary:
-        'Klaster terbesar ini didominasi oleh keluhan siswa dan mahasiswa terkait lauk ayam yang keras dan sayur yang sudah tidak segar saat dibagikan. Terdapat korelasi kuat antara keluhan ini dengan pendistribusian di area spesifik Jatinangor.',
-      samplePosts: [
-        {
-          name: 'Mahasiswa Unpad',
-          handle: '@mahasiswakeren',
-          time: '10:42 AM · Feb 12, 2026',
-          verified: false,
-          text: 'Hari ini dapet jatah mbg tapi ayamnya keras banget, sayurnya juga udah layu. Tolong dong evaluasi vendornya! Gak layak makan ini mah. #MBGJatinangor',
-        },
-        {
-          name: 'Warga Lokal',
-          handle: '@warga_jatinangor',
-          time: '08:15 AM · Feb 12, 2026',
-          verified: false,
-          text: 'Porsi hari ini mendingan sih, tapi tetep aja nasinya agak lembek. Semoga besok evaluasi lagi ya. Semangat terus buat yang masak di dapur umum.',
-        },
-      ],
-    },
-    {
-      id: 't2',
-      name: 'Logistics & Distribution Delays',
-      volume: '5,420',
-      trend: 'stable',
-      trendLabel: 'Stable',
-      keywords: [
-        'telat',
-        'jam istirahat',
-        'lapar',
-        'nunggu lama',
-        'distribusi kacau',
-        'kurir',
-        'koordinasi',
-      ],
-      aiSummary:
-        'Percakapan berpusat pada masalah operasional di mana makanan sering tiba setelah jam istirahat siang usai. Hal ini menyebabkan keluhan jadwal yang terganggu.',
-      samplePosts: [
-        {
-          name: 'Guru SMP 1',
-          handle: '@guru_smpn1',
-          time: '01:30 PM · Feb 11, 2026',
-          verified: true,
-          text: 'Anak-anak udah pada nunggu dari jam 12, makanan baru dateng jam 13.30. Kasihan pada kelaparan, padahal jam 1 udah mulai masuk kelas lagi. Mohon perbaiki sistem distribusinya.',
-        },
-      ],
-    },
-    {
-      id: 't3',
-      name: 'Packaging Waste Concerns',
-      volume: '4,410',
-      trend: 'up',
-      trendLabel: 'Trending Up',
-      keywords: [
-        'sampah plastik',
-        'kotak makan',
-        'numpuk',
-        'lingkungan',
-        'daur ulang',
-        'BEM',
-      ],
-      aiSummary:
-        'Kekhawatiran yang disuarakan oleh mahasiswa dan aktivis lingkungan terkait lonjakan volume sampah plastik dari kotak makan sekali pakai yang mulai menumpuk.',
-      samplePosts: [
-        {
-          name: 'BEM Kema Unpad',
-          handle: '@bem_unpad',
-          time: '04:20 PM · Feb 10, 2026',
-          verified: true,
-          text: 'Kami mendukung program pemenuhan gizi, namun pemerintah juga harus memikirkan solusi waste management-nya. Sampah plastik kotak MBG mulai menumpuk tak terkendali di sekitar kampus.',
-        },
-      ],
-    },
-    {
-      id: 't4',
-      name: 'Local Vendor Empowerment',
-      volume: '2,980',
-      trend: 'down',
-      trendLabel: 'Declining',
-      keywords: [
-        'ibu pkk',
-        'katering lokal',
-        'terbantu',
-        'ekonomi',
-        'pemberdayaan',
-        'dapur umum',
-      ],
-      aiSummary:
-        'Percakapan mengenai pelibatan ibu-ibu PKK dan katering lokal di Jatinangor. Walaupun positif, volume percakapan topik ini mulai menurun tergantikan oleh isu operasional.',
-      samplePosts: [
-        {
-          name: 'Katering Teh Euceu',
-          handle: '@katering_teh_euceu',
-          time: '09:00 AM · Feb 08, 2026',
-          verified: false,
-          text: 'Alhamdulillah, sejak ada program MBG ini ibu-ibu di RW 04 jadi punya penghasilan tambahan buat bantu suami. Semangat terus puas-puasin masaknya! Berkah buat semua.',
-        },
-      ],
-    },
-  ];
+interface ProjectRouteParams {
+  workspaceId: string;
+  projectId: string;
+  [key: string]: string | undefined;
+}
 
-  const selectedTopic = topics.find((topic) => topic.id === selectedTopicId);
+const formatNumber = (value: number): string => value.toLocaleString('en-US');
 
-  const dominantTopic = topics[0];
+const formatPercent = (value: number): string => `${(value * 100).toFixed(0)}%`;
 
-  const fastestGrowingTopic = topics.find((topic) => topic.trend === 'up');
+const ProjectTopicsPage = () => {
+  const { workspaceId, projectId } = useParams<ProjectRouteParams>();
+  const { topics, isLoading, error, refetch } = useProjectTopics(
+    workspaceId ?? '',
+    projectId ?? '',
+  );
 
-  return (
-    <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
-      <div className="space-y-8 pb-10">
-        {/* Header */}
-        <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-              Topic Modeling
-            </h1>
+  const project = useProjectStore((state) => {
+    const projects = state.projectsByWorkspace[workspaceId ?? ''] ?? [];
+    return projects.find((p) => p.id === projectId) ?? null;
+  });
 
-            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500">
-              Discover the primary narratives driving the conversation. Topics
-              are automatically clustered by AI to reveal the discussion
-              patterns that matter most.
-            </p>
-          </div>
+  const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
 
+  const {
+    documents,
+    isLoading: docsLoading,
+    error: docsError,
+  } = useTopicDocuments(
+    workspaceId ?? '',
+    projectId ?? '',
+    selectedTopic?.topicId,
+  );
+
+  const isModeling =
+    project?.processing?.status === 'MODELING' ||
+    project?.processing?.stage === 'MODELING';
+
+  if (isLoading && !topics) {
+    return (
+      <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
+        <p className="text-sm text-slate-500">Loading topics…</p>
+      </div>
+    );
+  }
+
+  if (error && !topics) {
+    return (
+      <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-6">
+          <p className="text-sm font-medium text-red-800">
+            Unable to load topics
+          </p>
+          <p className="mt-1 text-sm text-red-700">{error}</p>
           <button
             type="button"
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            onClick={refetch}
+            className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
           >
-            <Download size={16} />
-            Export
+            Try again
           </button>
-        </header>
+        </div>
+      </div>
+    );
+  }
 
-        {/* Summary */}
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <p className="text-xs font-medium text-slate-500">Total clusters</p>
-
-            <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-              {topics.length}
+  if ((!topics || topics.length === 0) && isModeling) {
+    return (
+      <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
+        <div className="space-y-6 pb-10">
+          <header>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+              Topics
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Topic modeling results from ETM analysis.
             </p>
+          </header>
 
-            <p className="mt-2 text-xs text-slate-400">
-              Detected conversation groups
+          <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
+            <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <BrainCircuit size={24} />
+            </div>
+            <h3 className="mt-4 text-sm font-semibold text-slate-900">
+              Topic modeling sedang berjalan
+            </h3>
+            <p className="mt-1 max-w-sm mx-auto text-sm leading-relaxed text-slate-500">
+              Proses ETM training sedang berlangsung. Halaman ini akan otomatis
+              menampilkan hasil setelah selesai.
             </p>
           </div>
+        </div>
+      </div>
+    );
+  }
 
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <p className="text-xs font-medium text-slate-500">Dominant topic</p>
-
-            <p className="mt-2 line-clamp-2 text-base font-semibold leading-snug text-slate-900">
-              {dominantTopic?.name ?? 'No topic'}
+  if (!topics || topics.length === 0) {
+    return (
+      <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
+        <div className="space-y-6 pb-10">
+          <header>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+              Topics
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Topic modeling results from ETM analysis.
             </p>
+          </header>
 
-            <p className="mt-2 text-xs text-slate-400">
-              Highest discussion volume
+          <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
+            <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+              <Database size={24} />
+            </div>
+            <h3 className="mt-4 text-sm font-semibold text-slate-900">
+              Tidak ada topics ditemukan
+            </h3>
+            <p className="mt-1 max-w-sm mx-auto text-sm leading-relaxed text-slate-500">
+              Topic modeling belum dijalankan untuk project ini.
             </p>
           </div>
+        </div>
+      </div>
+    );
+  }
 
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <p className="text-xs font-medium text-slate-500">
-              Fastest growing
+  return (
+    <>
+      <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
+        <div className="space-y-6 pb-10">
+          <header>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+              Topics
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Topic modeling results from ETM analysis.
             </p>
+          </header>
 
-            <p className="mt-2 line-clamp-2 text-base font-semibold leading-snug text-slate-900">
-              {fastestGrowingTopic?.name ?? 'No growing topic'}
-            </p>
-
-            <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-emerald-600">
-              <TrendingUp size={13} />
-              Volume increasing
-            </div>
-          </div>
-        </section>
-
-        {/* Topic list and deep dive */}
-        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
-          {/* Topic list */}
-          <aside className="min-w-0">
-            <div className="mb-3 flex items-center justify-between px-1">
-              <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Detected Narratives
-              </h2>
-
-              <span className="text-xs text-slate-400">
-                {topics.length} topics
-              </span>
-            </div>
-
-            <div className="space-y-2.5">
-              {topics.map((topic) => {
-                const isSelected = selectedTopicId === topic.id;
-
-                return (
-                  <button
-                    key={topic.id}
-                    type="button"
-                    onClick={() => setSelectedTopicId(topic.id)}
-                    className={`relative w-full overflow-hidden rounded-xl border p-4 text-left transition ${
-                      isSelected
-                        ? 'border-red-200 bg-red-50/70'
-                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60'
-                    }`}
-                  >
-                    {isSelected && (
-                      <span className="absolute inset-y-0 left-0 w-1 bg-red-500" />
-                    )}
-
-                    <h3
-                      className={`line-clamp-2 pr-2 text-sm font-semibold leading-snug ${
-                        isSelected ? 'text-slate-950' : 'text-slate-800'
-                      }`}
-                    >
-                      {topic.name}
-                    </h3>
-
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
-                        <AlignLeft size={13} className="text-slate-400" />
-                        {topic.volume} posts
-                      </span>
-
-                      <span
-                        className={`inline-flex shrink-0 items-center gap-1 text-xs font-medium ${
-                          topic.trend === 'up'
-                            ? 'text-emerald-600'
-                            : topic.trend === 'down'
-                              ? 'text-slate-400'
-                              : 'text-slate-500'
-                        }`}
-                      >
-                        {topic.trend === 'up' && <TrendingUp size={13} />}
-
-                        {topic.trend === 'down' && <TrendingDown size={13} />}
-
-                        {topic.trend === 'stable' && <Minus size={13} />}
-
-                        {topic.trendLabel}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </aside>
-
-          {/* Topic detail */}
-          <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
-            {selectedTopic ? (
-              <>
-                <div className="p-6 lg:p-8">
-                  <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 text-slate-500">
-                      <Hash size={15} />
-
-                      <span className="text-xs font-semibold uppercase tracking-[0.12em]">
-                        Topic Details
-                      </span>
-                    </div>
-
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${
-                        selectedTopic.trend === 'up'
-                          ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/10'
-                          : selectedTopic.trend === 'down'
-                            ? 'bg-slate-100 text-slate-500 ring-slate-500/10'
-                            : 'bg-slate-50 text-slate-600 ring-slate-500/10'
-                      }`}
-                    >
-                      {selectedTopic.trend === 'up' && <TrendingUp size={12} />}
-
-                      {selectedTopic.trend === 'down' && (
-                        <TrendingDown size={12} />
-                      )}
-
-                      {selectedTopic.trend === 'stable' && <Minus size={12} />}
-
-                      {selectedTopic.trendLabel}
-                    </span>
-                  </div>
-
-                  <h2 className="text-2xl font-semibold tracking-tight text-slate-950">
-                    {selectedTopic.name}
-                  </h2>
-
-                  {/* AI summary */}
-                  <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50/70 p-5">
-                    <div className="mb-2 flex items-center gap-2">
-                      <span className="flex size-6 items-center justify-center rounded-md bg-white text-xs font-semibold text-red-600 ring-1 ring-slate-200">
-                        AI
-                      </span>
-
-                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Topic Summary
-                      </p>
-                    </div>
-
-                    <p className="text-sm leading-relaxed text-slate-700">
-                      {selectedTopic.aiSummary}
-                    </p>
-                  </div>
-
-                  {/* Keywords */}
-                  <div className="mt-7">
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                      Top Keywords
-                    </p>
-
-                    <div className="flex flex-wrap gap-2">
-                      {selectedTopic.keywords.map((keyword) => (
-                        <span
-                          key={keyword}
-                          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600"
-                        >
-                          {keyword}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Representative posts */}
-                <div className="border-t border-slate-100 bg-slate-50/50 p-6 lg:p-8">
-                  <div className="mb-5 flex items-center justify-between gap-4">
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900">
-                        Representative Posts
-                      </h3>
-
-                      <p className="mt-1 text-xs text-slate-500">
-                        Examples that best represent this topic.
-                      </p>
-                    </div>
-
-                    <span className="text-xs text-slate-400">
-                      {selectedTopic.samplePosts.length}{' '}
-                      {selectedTopic.samplePosts.length === 1
-                        ? 'post'
-                        : 'posts'}
-                    </span>
-                  </div>
-
-                  <div className="space-y-4">
-                    {selectedTopic.samplePosts.map((post) => (
-                      <article
-                        key={`${post.handle}-${post.time}`}
-                        className="rounded-xl border border-slate-200 bg-white p-5"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-sm font-semibold text-slate-600">
-                              {post.name.charAt(0).toUpperCase()}
-                            </div>
-
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <p className="truncate text-sm font-semibold text-slate-900">
-                                  {post.name}
-                                </p>
-
-                                {post.verified && (
-                                  <BadgeCheck
-                                    size={15}
-                                    className="shrink-0 fill-blue-500 text-white"
-                                  />
-                                )}
-                              </div>
-
-                              <p className="truncate text-xs text-slate-500">
-                                {post.handle}
-                              </p>
-                            </div>
-                          </div>
-
-                          <X size={18} className="shrink-0 text-slate-300" />
-                        </div>
-
-                        <p className="mt-4 whitespace-pre-wrap text-[15px] leading-relaxed text-slate-800">
-                          {post.text}
-                        </p>
-
-                        <p className="mt-4 border-b border-slate-100 pb-4 text-xs font-medium text-slate-500">
-                          {post.time}
-                        </p>
-
-                        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-4">
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 transition hover:text-red-500"
-                          >
-                            <Heart size={15} />
-                            Like
-                          </button>
-
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 transition hover:text-blue-500"
-                          >
-                            <MessageSquare size={15} />
-                            Reply
-                          </button>
-
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 transition hover:text-slate-900"
-                          >
-                            <Share2 size={15} />
-                            Copy link
-                          </button>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="flex min-h-96 items-center justify-center p-8 text-center">
-                <div>
-                  <Hash size={24} className="mx-auto text-slate-400" />
-
-                  <h2 className="mt-3 text-sm font-semibold text-slate-900">
-                    Select a topic
-                  </h2>
-
-                  <p className="mt-1 text-sm text-slate-500">
-                    Choose a narrative to view its details.
-                  </p>
-                </div>
+          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <div className="flex items-center gap-2 text-slate-500">
+                <BrainCircuit size={14} />
+                <span className="text-[11px] font-semibold uppercase tracking-wider">
+                  Total Topics
+                </span>
               </div>
-            )}
+              <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
+                {formatNumber(topics.length)}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <div className="flex items-center gap-2 text-slate-500">
+                <Database size={14} />
+                <span className="text-[11px] font-semibold uppercase tracking-wider">
+                  Total Documents
+                </span>
+              </div>
+              <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
+                {formatNumber(documents.length)}
+              </p>
+            </div>
+          </section>
+
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {topics.map((topic) => (
+              <button
+                key={topic.topicId}
+                type="button"
+                onClick={() => setSelectedTopic(topic)}
+                className="group flex flex-col rounded-xl border border-slate-200 bg-white p-6 text-left transition hover:border-slate-300 hover:shadow-md"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="flex size-8 items-center justify-center rounded-lg bg-red-50 text-sm font-semibold text-red-600">
+                    {topic.topicId}
+                  </div>
+                  <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                    Topic {topic.topicId}
+                  </span>
+                </div>
+
+                <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-slate-700">
+                  {topic.context}
+                </p>
+
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {topic.words.slice(0, 5).map((word) => (
+                    <span
+                      key={word}
+                      className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600"
+                    >
+                      <Hash size={10} className="text-slate-400" />
+                      {word}
+                    </span>
+                  ))}
+                  {topic.words.length > 5 && (
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-400">
+                      +{topic.words.length - 5}
+                    </span>
+                  )}
+                </div>
+              </button>
+            ))}
           </section>
         </div>
       </div>
-    </div>
+
+      {selectedTopic && (
+        <div className="fixed inset-0 z-40 flex justify-end bg-slate-950/25">
+          <button
+            type="button"
+            aria-label="Close topic details"
+            onClick={() => setSelectedTopic(null)}
+            className="absolute inset-0 cursor-default"
+          />
+
+          <aside className="relative z-10 flex h-full w-full max-w-lg flex-col border-l border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-red-600">
+                  Topic {selectedTopic.topicId}
+                </p>
+                <h2 className="mt-1 text-lg font-semibold text-slate-950">
+                  Topic Detail
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedTopic(null)}
+                className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-6">
+              <div className="space-y-7">
+                <section>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Context
+                  </p>
+                  <p className="mt-3 text-sm leading-7 text-slate-800">
+                    {selectedTopic.context}
+                  </p>
+                </section>
+
+                <section>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Keywords
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {selectedTopic.words.map((word) => (
+                      <span
+                        key={word}
+                        className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600"
+                      >
+                        <Hash size={11} className="text-slate-400" />
+                        {word}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+
+                <section>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Sample Documents
+                  </p>
+
+                  {docsLoading && (
+                    <p className="mt-3 text-sm text-slate-500">
+                      Loading documents…
+                    </p>
+                  )}
+
+                  {docsError && (
+                    <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-4">
+                      <p className="text-sm text-red-700">{docsError}</p>
+                    </div>
+                  )}
+
+                  {!docsLoading && !docsError && documents.length === 0 && (
+                    <p className="mt-3 text-sm text-slate-500">
+                      No documents found for this topic.
+                    </p>
+                  )}
+
+                  {!docsLoading && documents.length > 0 && (
+                    <div className="mt-3 space-y-3">
+                      {documents.slice(0, 10).map((doc) => (
+                        <article
+                          key={doc.id}
+                          className="rounded-lg border border-slate-200 p-4"
+                        >
+                          <p className="text-sm leading-relaxed text-slate-800">
+                            {doc.rawText || doc.fullText}
+                          </p>
+                          <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+                            <span>@{doc.username}</span>
+                            <span>{formatPercent(doc.probability)}</span>
+                          </div>
+                          {doc.tweetUrl && (
+                            <a
+                              href={doc.tweetUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:underline"
+                            >
+                              <ExternalLink size={12} />
+                              View original
+                            </a>
+                          )}
+                        </article>
+                      ))}
+
+                      {documents.length > 10 && (
+                        <p className="text-xs text-slate-400">
+                          Showing 10 of {formatNumber(documents.length)}{' '}
+                          documents
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </section>
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
+    </>
   );
 };
 
-export default TopicProjectPage;
+export default ProjectTopicsPage;
