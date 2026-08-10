@@ -4,6 +4,7 @@ import { projectApi } from '@/lib/api/project-api';
 import type {
   CreateProjectInput,
   Project,
+  ProjectAnalytics,
   UpdateProjectInput,
 } from '@/types/project';
 
@@ -30,6 +31,30 @@ interface ProjectState {
   isUpdatingProject: (projectId: string) => boolean;
 
   isDeletingProject: (projectId: string) => boolean;
+
+  analyticsByProjectId: Record<string, ProjectAnalytics | null>;
+  analyticsLoadingIds: string[];
+
+  isAnalyticsLoading: (projectId: string) => boolean;
+  getAnalytics: (projectId: string) => ProjectAnalytics | null;
+
+  recrawlProject: (workspaceId: string, projectId: string) => Promise<boolean>;
+
+  applyProgressEvent: (
+    projectId: string,
+    event: {
+      status: Project['processing']['status'];
+      stage?: string | null;
+      progress: number;
+      crawledTweets?: number;
+      error?: { stage: string; message: string } | null;
+    },
+  ) => void;
+
+  fetchProjectAnalytics: (
+    workspaceId: string,
+    projectId: string,
+  ) => Promise<ProjectAnalytics | null>;
 
   fetchProjects: (workspaceId: string, force?: boolean) => Promise<Project[]>;
 
@@ -72,6 +97,9 @@ const initialState = {
   creatingWorkspaceIds: [] as string[],
   updatingProjectIds: [] as string[],
   deletingProjectIds: [] as string[],
+
+  analyticsByProjectId: {} as Record<string, ProjectAnalytics | null>,
+  analyticsLoadingIds: [] as string[],
 
   error: null as string | null,
 };
@@ -511,6 +539,137 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     });
   },
 
+  isAnalyticsLoading: (projectId): boolean => {
+    return get().analyticsLoadingIds.includes(projectId);
+  },
+
+  getAnalytics: (projectId): ProjectAnalytics | null => {
+    return get().analyticsByProjectId[projectId] ?? null;
+  },
+
+  recrawlProject: async (workspaceId, projectId): Promise<boolean> => {
+    try {
+      await projectApi.recrawlProject(workspaceId, projectId);
+
+      set((current) => ({
+        projectsByWorkspace: {
+          ...current.projectsByWorkspace,
+          [workspaceId]: (
+            current.projectsByWorkspace[workspaceId] ?? EMPTY_PROJECTS
+          ).map((project) =>
+            project.id === projectId
+              ? {
+                  ...project,
+                  processing: {
+                    status: 'CREATED',
+                    stage: null,
+                    progress: 0,
+                    error: null,
+                    jobId: null,
+                  },
+                  totalTweets: 0,
+                  crawledTweets: 0,
+                }
+              : project,
+          ),
+        },
+      }));
+
+      return true;
+    } catch (error) {
+      set({ error: getErrorMessage(error, 'Unable to recrawl project.') });
+      return false;
+    }
+  },
+
+  applyProgressEvent: (projectId, event) => {
+    set((current) => {
+      const updatedWorkspaces: Record<string, Project[]> = {};
+
+      for (const [workspaceId, projects] of Object.entries(
+        current.projectsByWorkspace,
+      )) {
+        const hasProject = projects.some((p) => p.id === projectId);
+        if (!hasProject) continue;
+
+        updatedWorkspaces[workspaceId] = projects.map((project) =>
+          project.id === projectId
+            ? {
+                ...project,
+                processing: {
+                  ...project.processing,
+                  status: event.status,
+                  stage: event.stage ?? null,
+                  progress: event.progress,
+                  error: event.error ?? null,
+                },
+                crawledTweets: event.crawledTweets ?? project.crawledTweets,
+                tweetsRetrieved: event.crawledTweets ?? project.tweetsRetrieved,
+                status: event.status,
+              }
+            : project,
+        );
+      }
+
+      if (Object.keys(updatedWorkspaces).length === 0) {
+        return {};
+      }
+
+      return {
+        projectsByWorkspace: {
+          ...current.projectsByWorkspace,
+          ...updatedWorkspaces,
+        },
+      };
+    });
+  },
+
+  fetchProjectAnalytics: async (
+    workspaceId,
+    projectId,
+  ): Promise<ProjectAnalytics | null> => {
+    if (get().analyticsLoadingIds.includes(projectId)) {
+      return get().analyticsByProjectId[projectId] ?? null;
+    }
+
+    set((current) => ({
+      analyticsLoadingIds: addUniqueValue(
+        current.analyticsLoadingIds,
+        projectId,
+      ),
+    }));
+
+    try {
+      const response = await projectApi.getProjectAnalytics(
+        workspaceId,
+        projectId,
+      );
+
+      const analytics = response.data;
+
+      set((current) => ({
+        analyticsByProjectId: {
+          ...current.analyticsByProjectId,
+          [projectId]: analytics,
+        },
+      }));
+
+      return analytics;
+    } catch (error) {
+      set({
+        error: getErrorMessage(error, 'Unable to load analytics.'),
+      });
+      return null;
+    } finally {
+      set((current) => ({
+        analyticsLoadingIds: removeValue(
+          current.analyticsLoadingIds,
+          projectId,
+        ),
+      }));
+    }
+  },
+
   resetProjectStore: (): void => {
     set({
       projectsByWorkspace: {},
@@ -519,6 +678,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       creatingWorkspaceIds: [],
       updatingProjectIds: [],
       deletingProjectIds: [],
+      analyticsByProjectId: {},
+      analyticsLoadingIds: [],
       error: null,
     });
   },
