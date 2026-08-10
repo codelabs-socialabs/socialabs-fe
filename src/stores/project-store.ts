@@ -34,8 +34,10 @@ interface ProjectState {
 
   analyticsByProjectId: Record<string, ProjectAnalytics | null>;
   analyticsLoadingIds: string[];
+  failedAnalyticsFetchIds: string[];
 
   isAnalyticsLoading: (projectId: string) => boolean;
+  hasAnalyticsFailed: (projectId: string) => boolean;
   getAnalytics: (projectId: string) => ProjectAnalytics | null;
 
   recrawlProject: (workspaceId: string, projectId: string) => Promise<boolean>;
@@ -100,6 +102,7 @@ const initialState = {
 
   analyticsByProjectId: {} as Record<string, ProjectAnalytics | null>,
   analyticsLoadingIds: [] as string[],
+  failedAnalyticsFetchIds: [] as string[],
 
   error: null as string | null,
 };
@@ -543,6 +546,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     return get().analyticsLoadingIds.includes(projectId);
   },
 
+  hasAnalyticsFailed: (projectId): boolean => {
+    return get().failedAnalyticsFetchIds.includes(projectId);
+  },
+
   getAnalytics: (projectId): ProjectAnalytics | null => {
     return get().analyticsByProjectId[projectId] ?? null;
   },
@@ -652,13 +659,21 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           ...current.analyticsByProjectId,
           [projectId]: analytics,
         },
+        failedAnalyticsFetchIds: removeValue(
+          current.failedAnalyticsFetchIds,
+          projectId,
+        ),
       }));
 
       return analytics;
     } catch (error) {
-      set({
+      set((current) => ({
+        failedAnalyticsFetchIds: addUniqueValue(
+          current.failedAnalyticsFetchIds,
+          projectId,
+        ),
         error: getErrorMessage(error, 'Unable to load analytics.'),
-      });
+      }));
       return null;
     } finally {
       set((current) => ({
@@ -680,6 +695,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       deletingProjectIds: [],
       analyticsByProjectId: {},
       analyticsLoadingIds: [],
+      failedAnalyticsFetchIds: [],
       error: null,
     });
   },
