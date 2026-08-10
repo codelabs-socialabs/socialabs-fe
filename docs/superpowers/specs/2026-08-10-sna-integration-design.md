@@ -11,6 +11,7 @@ Integrate real Social Network Analysis (Community Detection using Louvain algori
 │   React Frontend               │
 │   - Communities Page           │ (ForceGraph2D with real nodes/edges)
 │   - Influencers Page           │ (Influencer Ranking Table with real scores/roles)
+│   - SSE Progress Listener      │ (Listens to stage: COMMUNITY / INFLUENCER progress)
 └───────────────┬────────────────┘
                 │ GET /projects/:id/sna/communities
                 │ GET /projects/:id/sna/influencers
@@ -18,7 +19,8 @@ Integrate real Social Network Analysis (Community Detection using Louvain algori
                 ▼
 ┌────────────────────────────────┐
 │   NestJS Gateway               │
-│   - BullMQ Queue & Worker      │ (Chained after Sentiment/Emotion completion)
+│   - BullMQ Queue & Workers     │ (Chained after Sentiment/Emotion completion)
+│   - SSE Stream Endpoint        │ (Emits stage: COMMUNITY & INFLUENCER events)
 │   - AiBackendClient            │ (Proxy requests to AI service)
 └───────────────┬────────────────┘
                 │ GET /api/sna/community-detection/:project_id
@@ -104,10 +106,11 @@ Influencer roles are derived deterministically from centrality metrics:
    - `getBuzzerDetection(projectId: string)` -> fetches `/api/sna/buzzer-detection/${projectId}`
    - `processSNA(projectId, keyword, startDate, endDate)` -> triggers `/api/sna/community-detection` and `/api/sna/buzzer-detection`
 
-2. **BullMQ Worker (`sna-analysis.processor.ts`)**:
-   - Queue: `sna-analysis`
+2. **BullMQ Worker & SSE Pipeline (`sna-analysis.processor.ts`)**:
+   - Queue: `sna-analysis` (or `community-analysis` & `influencer-analysis`)
    - Job payload: `{ workspaceId, userId, projectId }`
    - Processing logic: Calls `AiBackendClient.processSNA` for the project ID.
+   - SSE Integration: Queue events emit SSE stage events (`stage: 'COMMUNITY'` and `stage: 'INFLUENCER'`) through `ProjectProgressGateway` / QueueEvents, matching the exact SSE pattern used by Topic, Sentiment, and Emotion analysis.
 
 3. **Proxy Endpoints (`project.controller.ts` & `project.service.ts`)**:
    - `GET /workspaces/:workspaceId/projects/:projectId/sna/communities`
