@@ -1,6 +1,6 @@
 import { Activity, Database, LoaderCircle, Play, Sparkles } from 'lucide-react';
 import { useState } from 'react';
-import { useParams } from 'react';
+import { useParams } from 'react-router';
 import { toast } from 'sonner';
 
 import {
