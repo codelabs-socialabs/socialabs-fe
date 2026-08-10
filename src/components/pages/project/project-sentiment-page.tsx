@@ -6,11 +6,11 @@ import {
   ThumbsUp,
 } from 'lucide-react';
 import { useState } from 'react';
-import { useParams } from 'react-router';
+import { useParams } from 'react';
 import { toast } from 'sonner';
 
 import { defaultFontSize, useWordCloud } from '@isoterik/react-word-cloud';
-import type { Word } from '@isoterik/react-word-cloud';
+import type { Word, WordCloudProps } from '@isoterik/react-word-cloud';
 import {
   Cell,
   Pie,
@@ -326,17 +326,14 @@ const ProjectSentimentPage = () => {
 
         {/* Word cloud */}
         {!wordLoading && wordFrequency && wordFrequency.positive.length > 0 && (
-          <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-white p-6">
-              <h2 className="text-sm font-semibold text-slate-900">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="flex flex-col items-center">
+              <h2 className="mb-4 text-sm font-semibold text-slate-900">
                 Positive Keywords
               </h2>
-              <div className="mt-4 h-[240px]">
+              <div className="h-[300px] w-full">
                 {positiveWords.length > 0 ? (
-                  <WordCloudView
-                    words={positiveWords}
-                    color={SENTIMENT_COLORS.positive}
-                  />
+                  <CustomWordCloud words={positiveWords} type="positive" />
                 ) : (
                   <p className="text-sm text-slate-500">
                     No positive keywords.
@@ -344,16 +341,13 @@ const ProjectSentimentPage = () => {
                 )}
               </div>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-6">
-              <h2 className="text-sm font-semibold text-slate-900">
+            <div className="flex flex-col items-center">
+              <h2 className="mb-4 text-sm font-semibold text-slate-900">
                 Negative Keywords
               </h2>
-              <div className="mt-4 h-[240px]">
+              <div className="h-[300px] w-full">
                 {negativeWords.length > 0 ? (
-                  <WordCloudView
-                    words={negativeWords}
-                    color={SENTIMENT_COLORS.negative}
-                  />
+                  <CustomWordCloud words={negativeWords} type="negative" />
                 ) : (
                   <p className="text-sm text-slate-500">
                     No negative keywords.
@@ -361,7 +355,7 @@ const ProjectSentimentPage = () => {
                 )}
               </div>
             </div>
-          </section>
+          </div>
         )}
 
         {/* Representative posts */}
@@ -430,23 +424,123 @@ const ProjectSentimentPage = () => {
   );
 };
 
-const WordCloudView = ({ words, color }: { words: Word[]; color: string }) => {
-  const { WordCloud } = useWordCloud({
+const resolveFontWeight: WordCloudProps['fontWeight'] = (word) => {
+  if (word.value < 100) return 'normal';
+  if (word.value < 180) return 'bold';
+  return '900';
+};
+
+const rotationWeights = [0, 0, 0, 90, -90];
+const resolveRotate: WordCloudProps['rotate'] = (_word, index) => {
+  return rotationWeights[index % rotationWeights.length];
+};
+
+const resolveRandom = () => 0.42;
+
+const CustomWordCloud = ({
+  words,
+  type,
+}: {
+  words: Word[];
+  type: 'positive' | 'negative';
+}) => {
+  const [hoveredWord, setHoveredWord] = useState<Word | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  const WIDTH = 400;
+  const HEIGHT = 300;
+
+  const positiveColors = [
+    '#059669',
+    '#10b981',
+    '#34d399',
+    '#047857',
+    '#065f46',
+  ];
+  const negativeColors = [
+    '#dc2626',
+    '#ef4444',
+    '#f87171',
+    '#b91c1c',
+    '#991b1b',
+  ];
+  const colors = type === 'positive' ? positiveColors : negativeColors;
+
+  const { computedWords } = useWordCloud({
     words,
-    options: {
-      colors: [color],
-      fontFamily: 'system-ui',
-      fontSizes: [12, 28] as [number, number],
-      rotations: [0] as [number, number],
-      rotationAngles: [0, 0] as [number, number],
-      scale: 'linear',
-      deterministic: true,
-    },
-    size: [400, 240] as [number, number],
+    width: WIDTH,
+    height: HEIGHT,
+    font: 'Inter, sans-serif',
+    fontWeight: resolveFontWeight,
     fontSize: defaultFontSize,
+    rotate: resolveRotate,
+    fontStyle: 'normal',
+    spiral: 'rectangular',
+    padding: 5,
+    timeInterval: 1,
+    random: resolveRandom,
   });
 
-  return <WordCloud />;
+  return (
+    <div
+      className="relative flex h-full w-full cursor-default items-center justify-center"
+      onMouseMove={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      }}
+    >
+      <svg
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        className="h-full w-full overflow-visible"
+      >
+        <g transform={`translate(${WIDTH / 2},${HEIGHT / 2})`}>
+          {computedWords.map((word, index) => (
+            <text
+              key={`${word.text}-${index}`}
+              textAnchor="middle"
+              className="transition-all duration-300"
+              onMouseEnter={() => setHoveredWord(word)}
+              onMouseLeave={() => setHoveredWord(null)}
+              style={{
+                fontSize: word.size,
+                fontFamily: word.font,
+                fontWeight: word.weight,
+                fill: colors[index % colors.length],
+                opacity: hoveredWord
+                  ? hoveredWord.text === word.text
+                    ? 1
+                    : 0.2
+                  : 1,
+                transform: `translate(${word.x}px, ${word.y}px) rotate(${word.rotate}deg)`,
+              }}
+            >
+              {word.text}
+            </text>
+          ))}
+        </g>
+      </svg>
+
+      {hoveredWord && (
+        <div
+          className="pointer-events-none absolute z-50 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white shadow-xl"
+          style={{
+            left: mousePos.x,
+            top: mousePos.y - 30,
+            transform: 'translateX(-50%)',
+          }}
+        >
+          <span className="mr-1.5 font-bold">{hoveredWord.text}:</span>
+          <span
+            className={
+              type === 'positive' ? 'text-emerald-400' : 'text-red-400'
+            }
+          >
+            {hoveredWord.value} mentions
+          </span>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default ProjectSentimentPage;

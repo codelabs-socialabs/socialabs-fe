@@ -18,16 +18,26 @@ export const useProjectTopics = (
   const isLoading = useProjectStore((state) =>
     state.isTopicsLoading(projectId),
   );
+  const hasFailed = useProjectStore((state) =>
+    state.hasTopicsFailed(projectId),
+  );
   const fetchProjectTopics = useProjectStore(
     (state) => state.fetchProjectTopics,
   );
   const error = useProjectStore((state) => state.error);
 
   useEffect(() => {
-    if (!topics && !isLoading) {
+    if (!topics && !isLoading && !hasFailed) {
       void fetchProjectTopics(workspaceId, projectId);
     }
-  }, [topics, isLoading, workspaceId, projectId, fetchProjectTopics]);
+  }, [
+    topics,
+    isLoading,
+    hasFailed,
+    workspaceId,
+    projectId,
+    fetchProjectTopics,
+  ]);
 
   const refetch = () => {
     void fetchProjectTopics(workspaceId, projectId);

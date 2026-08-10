@@ -1,11 +1,24 @@
-import { BrainCircuit, Database, ExternalLink, Hash, X } from 'lucide-react';
-import { useState } from 'react';
+import {
+  AlignLeft,
+  BrainCircuit,
+  Database,
+  ExternalLink,
+  Hash,
+  Heart,
+  LoaderCircle,
+  MessageSquare,
+  Play,
+  Share2,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
+import { toast } from 'sonner';
 
+import { projectApi } from '@/lib/api/project-api';
+import { useProjectProgress } from '@/hooks/use-project-progress';
 import { useProjectStore } from '@/stores/project-store';
 import { useProjectTopics } from '@/hooks/use-project-topics';
 import { useTopicDocuments } from '@/hooks/use-topic-documents';
-import type { Topic } from '@/types/project';
 
 interface ProjectRouteParams {
   workspaceId: string;
@@ -14,8 +27,6 @@ interface ProjectRouteParams {
 }
 
 const formatNumber = (value: number): string => value.toLocaleString('en-US');
-
-const formatPercent = (value: number): string => `${(value * 100).toFixed(0)}%`;
 
 const ProjectTopicsPage = () => {
   const { workspaceId, projectId } = useParams<ProjectRouteParams>();
@@ -29,7 +40,13 @@ const ProjectTopicsPage = () => {
     return projects.find((p) => p.id === projectId) ?? null;
   });
 
-  const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
+  useProjectProgress(workspaceId ?? '', projectId ?? '');
+
+  const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
+  const [isTriggering, setIsTriggering] = useState(false);
+
+  const selectedTopic =
+    topics?.find((t) => t.topicId === selectedTopicId) ?? null;
 
   const {
     documents,
@@ -44,6 +61,36 @@ const ProjectTopicsPage = () => {
   const isModeling =
     project?.processing?.status === 'MODELING' ||
     project?.processing?.stage === 'MODELING';
+
+  const isFailed = project?.processing?.status === 'FAILED';
+  const failedStage = project?.processing?.error?.stage;
+
+  useEffect(() => {
+    if (project?.processing?.status === 'COMPLETED' && !topics) {
+      refetch();
+    }
+  }, [project?.processing?.status, topics, refetch]);
+
+  useEffect(() => {
+    if (topics && topics.length > 0 && selectedTopicId === null) {
+      setSelectedTopicId(topics[0].topicId);
+    }
+  }, [topics, selectedTopicId]);
+
+  const handleTriggerModeling = async () => {
+    if (!workspaceId || !projectId) return;
+    setIsTriggering(true);
+    try {
+      await projectApi.processTopics(workspaceId, projectId);
+      toast.success('Topic modeling started.', {
+        description: 'Results will appear when processing completes.',
+      });
+    } catch {
+      toast.error('Failed to start topic modeling.');
+    } finally {
+      setIsTriggering(false);
+    }
+  };
 
   if (isLoading && !topics) {
     return (
@@ -61,13 +108,75 @@ const ProjectTopicsPage = () => {
             Unable to load topics
           </p>
           <p className="mt-1 text-sm text-red-700">{error}</p>
-          <button
-            type="button"
-            onClick={refetch}
-            className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
-          >
-            Try again
-          </button>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={refetch}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+            >
+              Try again
+            </button>
+            <button
+              type="button"
+              onClick={handleTriggerModeling}
+              disabled={isTriggering}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+            >
+              {isTriggering ? (
+                <LoaderCircle size={14} className="animate-spin" />
+              ) : (
+                <Play size={14} />
+              )}
+              Run Topic Modeling
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (
+    (!topics || topics.length === 0) &&
+    isFailed &&
+    failedStage === 'MODELING'
+  ) {
+    return (
+      <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
+        <div className="space-y-6 pb-10">
+          <header>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+              Topic Modeling
+            </h1>
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500">
+              Discover the primary narratives driving the conversation.
+            </p>
+          </header>
+
+          <div className="rounded-xl border border-red-200 bg-red-50 p-12 text-center">
+            <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-red-100 text-red-600">
+              <BrainCircuit size={24} />
+            </div>
+            <h3 className="mt-4 text-sm font-semibold text-slate-900">
+              Topic modeling gagal
+            </h3>
+            <p className="mt-1 max-w-sm mx-auto text-sm leading-relaxed text-red-700">
+              {project?.processing?.error?.message ??
+                'Terjadi kesalahan saat proses topic modeling.'}
+            </p>
+            <button
+              type="button"
+              onClick={handleTriggerModeling}
+              disabled={isTriggering}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
+            >
+              {isTriggering ? (
+                <LoaderCircle size={14} className="animate-spin" />
+              ) : (
+                <Play size={14} />
+              )}
+              Run Topic Modeling
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -79,10 +188,10 @@ const ProjectTopicsPage = () => {
         <div className="space-y-6 pb-10">
           <header>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-              Topics
+              Topic Modeling
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Topic modeling results from ETM analysis.
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500">
+              Discover the primary narratives driving the conversation.
             </p>
           </header>
 
@@ -109,10 +218,10 @@ const ProjectTopicsPage = () => {
         <div className="space-y-6 pb-10">
           <header>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-              Topics
+              Topic Modeling
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Topic modeling results from ETM analysis.
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500">
+              Discover the primary narratives driving the conversation.
             </p>
           </header>
 
@@ -124,8 +233,22 @@ const ProjectTopicsPage = () => {
               Tidak ada topics ditemukan
             </h3>
             <p className="mt-1 max-w-sm mx-auto text-sm leading-relaxed text-slate-500">
-              Topic modeling belum dijalankan untuk project ini.
+              Topic modeling belum dijalankan untuk project ini. Jalankan secara
+              manual atau tunggu hingga crawling selesai.
             </p>
+            <button
+              type="button"
+              onClick={handleTriggerModeling}
+              disabled={isTriggering}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
+            >
+              {isTriggering ? (
+                <LoaderCircle size={14} className="animate-spin" />
+              ) : (
+                <Play size={14} />
+              )}
+              Run Topic Modeling
+            </button>
           </div>
         </div>
       </div>
@@ -133,209 +256,273 @@ const ProjectTopicsPage = () => {
   }
 
   return (
-    <>
-      <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
-        <div className="space-y-6 pb-10">
-          <header>
+    <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
+      <div className="space-y-8 pb-10">
+        {/* Header */}
+        <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+          <div>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-              Topics
+              Topic Modeling
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Topic modeling results from ETM analysis.
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500">
+              Discover the primary narratives driving the conversation. Topics
+              are automatically clustered by AI to reveal the discussion
+              patterns that matter most.
             </p>
-          </header>
+          </div>
+        </header>
 
-          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <div className="flex items-center gap-2 text-slate-500">
-                <BrainCircuit size={14} />
-                <span className="text-[11px] font-semibold uppercase tracking-wider">
-                  Total Topics
-                </span>
-              </div>
-              <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-                {formatNumber(topics.length)}
-              </p>
+        {/* Summary */}
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <p className="text-xs font-medium text-slate-500">Total clusters</p>
+            <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+              {topics.length}
+            </p>
+            <p className="mt-2 text-xs text-slate-400">
+              Detected conversation groups
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <p className="text-xs font-medium text-slate-500">Dominant topic</p>
+            <p className="mt-2 line-clamp-2 text-base font-semibold leading-snug text-slate-900">
+              {topics[0]?.context ?? 'No topic'}
+            </p>
+            <p className="mt-2 text-xs text-slate-400">
+              Highest discussion volume
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <p className="text-xs font-medium text-slate-500">
+              Total documents
+            </p>
+            <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+              {formatNumber(documents.length)}
+            </p>
+            <p className="mt-2 text-xs text-slate-400">Across all topics</p>
+          </div>
+        </section>
+
+        {/* Topic list and deep dive */}
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
+          {/* Topic list */}
+          <aside className="min-w-0">
+            <div className="mb-3 flex items-center justify-between px-1">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Detected Narratives
+              </h2>
+              <span className="text-xs text-slate-400">
+                {topics.length} topics
+              </span>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <div className="flex items-center gap-2 text-slate-500">
-                <Database size={14} />
-                <span className="text-[11px] font-semibold uppercase tracking-wider">
-                  Total Documents
-                </span>
-              </div>
-              <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-                {formatNumber(documents.length)}
-              </p>
-            </div>
-          </section>
+            <div className="space-y-2.5">
+              {topics.map((topic) => {
+                const isSelected = selectedTopicId === topic.topicId;
 
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {topics.map((topic) => (
-              <button
-                key={topic.topicId}
-                type="button"
-                onClick={() => setSelectedTopic(topic)}
-                className="group flex flex-col rounded-xl border border-slate-200 bg-white p-6 text-left transition hover:border-slate-300 hover:shadow-md"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="flex size-8 items-center justify-center rounded-lg bg-red-50 text-sm font-semibold text-red-600">
-                    {topic.topicId}
-                  </div>
-                  <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                    Topic {topic.topicId}
-                  </span>
-                </div>
+                return (
+                  <button
+                    key={topic.topicId}
+                    type="button"
+                    onClick={() => setSelectedTopicId(topic.topicId)}
+                    className={`relative w-full overflow-hidden rounded-xl border p-4 text-left transition ${
+                      isSelected
+                        ? 'border-red-200 bg-red-50/70'
+                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60'
+                    }`}
+                  >
+                    {isSelected && (
+                      <span className="absolute inset-y-0 left-0 w-1 bg-red-500" />
+                    )}
 
-                <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-slate-700">
-                  {topic.context}
-                </p>
-
-                <div className="mt-4 flex flex-wrap gap-1.5">
-                  {topic.words.slice(0, 5).map((word) => (
-                    <span
-                      key={word}
-                      className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600"
+                    <h3
+                      className={`line-clamp-2 pr-2 text-sm font-semibold leading-snug ${
+                        isSelected ? 'text-slate-950' : 'text-slate-800'
+                      }`}
                     >
-                      <Hash size={10} className="text-slate-400" />
-                      {word}
-                    </span>
-                  ))}
-                  {topic.words.length > 5 && (
-                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-400">
-                      +{topic.words.length - 5}
-                    </span>
-                  )}
-                </div>
-              </button>
-            ))}
-          </section>
-        </div>
-      </div>
+                      {topic.context}
+                    </h3>
 
-      {selectedTopic && (
-        <div className="fixed inset-0 z-40 flex justify-end bg-slate-950/25">
-          <button
-            type="button"
-            aria-label="Close topic details"
-            onClick={() => setSelectedTopic(null)}
-            className="absolute inset-0 cursor-default"
-          />
-
-          <aside className="relative z-10 flex h-full w-full max-w-lg flex-col border-l border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.14em] text-red-600">
-                  Topic {selectedTopic.topicId}
-                </p>
-                <h2 className="mt-1 text-lg font-semibold text-slate-950">
-                  Topic Detail
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedTopic(null)}
-                className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-5 py-6">
-              <div className="space-y-7">
-                <section>
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                    Context
-                  </p>
-                  <p className="mt-3 text-sm leading-7 text-slate-800">
-                    {selectedTopic.context}
-                  </p>
-                </section>
-
-                <section>
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                    Keywords
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {selectedTopic.words.map((word) => (
-                      <span
-                        key={word}
-                        className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600"
-                      >
-                        <Hash size={11} className="text-slate-400" />
-                        {word}
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                        <AlignLeft size={13} className="text-slate-400" />
+                        {topic.words.length} keywords
                       </span>
-                    ))}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          {/* Topic detail */}
+          <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            {selectedTopic ? (
+              <>
+                <div className="p-6 lg:p-8">
+                  <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <Hash size={15} />
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em]">
+                        Topic {selectedTopic.topicId}
+                      </span>
+                    </div>
                   </div>
-                </section>
 
-                <section>
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                    Sample Documents
-                  </p>
+                  <h2 className="text-2xl font-semibold tracking-tight text-slate-950">
+                    {selectedTopic.context}
+                  </h2>
 
-                  {docsLoading && (
-                    <p className="mt-3 text-sm text-slate-500">
-                      Loading documents…
+                  {/* AI summary */}
+                  <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50/70 p-5">
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="flex size-6 items-center justify-center rounded-md bg-white text-xs font-semibold text-red-600 ring-1 ring-slate-200">
+                        AI
+                      </span>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Topic Summary
+                      </p>
+                    </div>
+                    <p className="text-sm leading-relaxed text-slate-700">
+                      {selectedTopic.context}
                     </p>
-                  )}
+                  </div>
+
+                  {/* Keywords */}
+                  <div className="mt-7">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      Top Keywords
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedTopic.words.map((keyword) => (
+                        <span
+                          key={keyword}
+                          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600"
+                        >
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Representative posts */}
+                <div className="border-t border-slate-100 bg-slate-50/50 p-6 lg:p-8">
+                  <div className="mb-5 flex items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900">
+                        Representative Posts
+                      </h3>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Examples that best represent this topic.
+                      </p>
+                    </div>
+                    <span className="text-xs text-slate-400">
+                      {docsLoading
+                        ? 'Loading…'
+                        : `${documents.length} ${documents.length === 1 ? 'post' : 'posts'}`}
+                    </span>
+                  </div>
 
                   {docsError && (
-                    <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-4">
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                       <p className="text-sm text-red-700">{docsError}</p>
                     </div>
                   )}
 
                   {!docsLoading && !docsError && documents.length === 0 && (
-                    <p className="mt-3 text-sm text-slate-500">
+                    <p className="text-sm text-slate-500">
                       No documents found for this topic.
                     </p>
                   )}
 
-                  {!docsLoading && documents.length > 0 && (
-                    <div className="mt-3 space-y-3">
-                      {documents.slice(0, 10).map((doc) => (
-                        <article
-                          key={doc.id}
-                          className="rounded-lg border border-slate-200 p-4"
-                        >
-                          <p className="text-sm leading-relaxed text-slate-800">
-                            {doc.rawText || doc.fullText}
-                          </p>
-                          <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
-                            <span>@{doc.username}</span>
-                            <span>{formatPercent(doc.probability)}</span>
+                  <div className="space-y-4">
+                    {documents.slice(0, 10).map((doc) => (
+                      <article
+                        key={doc.id}
+                        className="rounded-xl border border-slate-200 bg-white p-5"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-sm font-semibold text-slate-600">
+                              {(doc.username || 'U').charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className="truncate text-sm font-semibold text-slate-900">
+                                  {doc.username || 'Unknown'}
+                                </p>
+                              </div>
+                              <p className="truncate text-xs text-slate-500">
+                                @{doc.username || 'unknown'}
+                              </p>
+                            </div>
                           </div>
-                          {doc.tweetUrl && (
-                            <a
-                              href={doc.tweetUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:underline"
-                            >
-                              <ExternalLink size={12} />
-                              View original
-                            </a>
-                          )}
-                        </article>
-                      ))}
+                          <span className="text-xs font-medium text-slate-400">
+                            {(doc.probability * 100).toFixed(0)}% match
+                          </span>
+                        </div>
 
-                      {documents.length > 10 && (
-                        <p className="text-xs text-slate-400">
-                          Showing 10 of {formatNumber(documents.length)}{' '}
-                          documents
+                        <p className="mt-4 whitespace-pre-wrap text-[15px] leading-relaxed text-slate-800">
+                          {doc.rawText || doc.fullText}
                         </p>
-                      )}
-                    </div>
+
+                        {doc.tweetUrl && (
+                          <a
+                            href={doc.tweetUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:underline"
+                          >
+                            <ExternalLink size={12} />
+                            View original
+                          </a>
+                        )}
+
+                        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-slate-100 pt-4">
+                          <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
+                            <Heart size={15} />
+                            Like
+                          </span>
+                          <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
+                            <MessageSquare size={15} />
+                            Reply
+                          </span>
+                          <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
+                            <Share2 size={15} />
+                            Copy link
+                          </span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+
+                  {documents.length > 10 && (
+                    <p className="mt-4 text-xs text-slate-400">
+                      Showing 10 of {formatNumber(documents.length)} documents
+                    </p>
                   )}
-                </section>
+                </div>
+              </>
+            ) : (
+              <div className="flex min-h-96 items-center justify-center p-8 text-center">
+                <div>
+                  <Hash size={24} className="mx-auto text-slate-400" />
+                  <h2 className="mt-3 text-sm font-semibold text-slate-900">
+                    Select a topic
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Choose a narrative to view its details.
+                  </p>
+                </div>
               </div>
-            </div>
-          </aside>
+            )}
+          </section>
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 };
 

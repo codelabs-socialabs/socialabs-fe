@@ -10,7 +10,9 @@ import {
   ExternalLink,
   FileDown,
   Filter,
+  LoaderCircle,
   MoreHorizontal,
+  RefreshCw,
   Search,
   SlidersHorizontal,
   Trash2,
@@ -18,8 +20,10 @@ import {
 } from 'lucide-react';
 import { type ChangeEvent, type ReactNode, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
+import { toast } from 'sonner';
 
 import { useProjectTweets } from '@/hooks/use-project-tweets';
+import { useProjectStore } from '@/stores/project-store';
 import type { Tweet } from '@/types/project';
 
 type DatasetStatus = 'included' | 'excluded' | 'duplicate' | 'processing';
@@ -279,6 +283,24 @@ const ProjectDatasetPage = () => {
     refetch,
   } = useProjectTweets(workspaceId ?? '', projectId ?? '');
 
+  const recrawlProject = useProjectStore((state) => state.recrawlProject);
+  const [isRecrawling, setIsRecrawling] = useState(false);
+
+  const handleRecrawl = async () => {
+    if (!workspaceId || !projectId) return;
+    setIsRecrawling(true);
+    try {
+      await recrawlProject(workspaceId, projectId);
+      toast.success('Crawling started.', {
+        description: 'Dataset will refresh when crawling completes.',
+      });
+    } catch {
+      toast.error('Failed to start crawling.');
+    } finally {
+      setIsRecrawling(false);
+    }
+  };
+
   const dataset = useMemo<DatasetPost[]>(
     () => (tweetData?.tweets ?? []).map(mapTweetToPost),
     [tweetData],
@@ -529,14 +551,30 @@ const ProjectDatasetPage = () => {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsExportModalOpen(true)}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
-              >
-                <Download size={16} />
-                Export Dataset
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleRecrawl}
+                  disabled={isRecrawling}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {isRecrawling ? (
+                    <LoaderCircle size={16} className="animate-spin" />
+                  ) : (
+                    <RefreshCw size={16} />
+                  )}
+                  Recrawl
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsExportModalOpen(true)}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
+                >
+                  <Download size={16} />
+                  Export Dataset
+                </button>
+              </div>
             </header>
 
             {/* Summary */}
@@ -1234,6 +1272,7 @@ const ProjectDatasetPage = () => {
                     <option value={25}>25</option>
                     <option value={50}>50</option>
                     <option value={100}>100</option>
+                    <option value={999999}>All</option>
                   </select>
 
                   <span>

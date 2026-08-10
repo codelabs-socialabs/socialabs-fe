@@ -40,8 +40,10 @@ interface ProjectState {
 
   topicsByProjectId: Record<string, Topic[]>;
   topicsLoadingIds: string[];
+  failedTopicsFetchIds: string[];
 
   isTopicsLoading: (projectId: string) => boolean;
+  hasTopicsFailed: (projectId: string) => boolean;
   getTopics: (projectId: string) => Topic[] | null;
 
   fetchProjectTopics: (
@@ -119,6 +121,7 @@ const initialState = {
 
   topicsByProjectId: {} as Record<string, Topic[]>,
   topicsLoadingIds: [] as string[],
+  failedTopicsFetchIds: [] as string[],
 
   error: null as string | null,
 };
@@ -707,6 +710,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     return get().topicsLoadingIds.includes(projectId);
   },
 
+  hasTopicsFailed: (projectId): boolean => {
+    return get().failedTopicsFetchIds.includes(projectId);
+  },
+
   getTopics: (projectId): Topic[] | null => {
     return get().topicsByProjectId[projectId] ?? null;
   },
@@ -736,13 +743,21 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           ...current.topicsByProjectId,
           [projectId]: topics,
         },
+        failedTopicsFetchIds: removeValue(
+          current.failedTopicsFetchIds,
+          projectId,
+        ),
       }));
 
       return topics;
     } catch (error) {
-      set({
+      set((current) => ({
+        failedTopicsFetchIds: addUniqueValue(
+          current.failedTopicsFetchIds,
+          projectId,
+        ),
         error: getErrorMessage(error, 'Unable to load topics.'),
-      });
+      }));
       return null;
     } finally {
       set((current) => ({
@@ -764,6 +779,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       failedAnalyticsFetchIds: [],
       topicsByProjectId: {},
       topicsLoadingIds: [],
+      failedTopicsFetchIds: [],
       error: null,
     });
   },
