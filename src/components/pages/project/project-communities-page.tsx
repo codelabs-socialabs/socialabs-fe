@@ -1,18 +1,67 @@
-import { Download, Share2 } from 'lucide-react';
+import { Download, LoaderCircle, Play, Share2 } from 'lucide-react';
+import { useState } from 'react';
+import { useParams } from 'react';
+import { toast } from 'sonner';
 
 import SNACentralNode from '@/components/fragments/sna/sna-central-node';
 import SNACommunitySummary from '@/components/fragments/sna/sna-community-summary';
 import SNAConversation from '@/components/fragments/sna/sna-conversation';
 import SNANetworkGraph from '@/components/fragments/sna/sna-nework-grap';
 import SNASnapshot from '@/components/fragments/sna/sna-snapshot';
+import { useProjectCommunities } from '@/hooks/use-project-communities';
+import { useProjectProgress } from '@/hooks/use-project-progress';
+import { projectApi } from '@/lib/api/project-api';
+
+interface ProjectRouteParams {
+  workspaceId: string;
+  projectId: string;
+  [key: string]: string | undefined;
+}
 
 const SNAPage = () => {
+  const { workspaceId, projectId } = useParams<ProjectRouteParams>();
+  const { communityResult, isLoading, error, refetch } = useProjectCommunities(
+    workspaceId ?? '',
+    projectId ?? '',
+  );
+
+  useProjectProgress(workspaceId ?? '', projectId ?? '');
+
+  const [isTriggering, setIsTriggering] = useState(false);
+
+  const handleRunAnalysis = async () => {
+    if (!workspaceId || !projectId) return;
+    try {
+      setIsTriggering(true);
+      await projectApi.processSNA(workspaceId, projectId);
+      toast.success('Community analysis queued');
+      refetch();
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : 'Failed to start community analysis',
+      );
+    } finally {
+      setIsTriggering(false);
+    }
+  };
+
   const snapshotMetrics = {
-    totalNodes: 12430,
-    totalConnections: 28115,
-    networkDensity: 0.018,
-    largestCommunity: 'Cluster A (34%)',
-    centralNode: '@dimsum_politik',
+    totalNodes: communityResult?.totalNodes ?? 0,
+    totalConnections: communityResult?.totalEdges ?? 0,
+    networkDensity: communityResult?.totalNodes
+      ? Number(
+          (
+            (2 * (communityResult.totalEdges ?? 0)) /
+            (communityResult.totalNodes * (communityResult.totalNodes - 1) || 1)
+          ).toFixed(3),
+        )
+      : 0,
+    largestCommunity: communityResult?.totalCommunities
+      ? `${communityResult.totalCommunities} Communities`
+      : 'N/A',
+    centralNode: communityResult?.nodes?.[0]?.name ?? 'N/A',
   };
 
   return (
@@ -35,6 +84,20 @@ const SNAPage = () => {
           <div className="flex shrink-0 flex-wrap items-center gap-2.5">
             <button
               type="button"
+              onClick={handleRunAnalysis}
+              disabled={isTriggering}
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {isTriggering ? (
+                <LoaderCircle size={16} className="animate-spin" />
+              ) : (
+                <Play size={16} />
+              )}
+              Run Community Analysis
+            </button>
+
+            <button
+              type="button"
               className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
             >
               <Share2 size={16} />
@@ -51,31 +114,87 @@ const SNAPage = () => {
           </div>
         </header>
 
-        {/* Network snapshot */}
-        <section>
-          <SNASnapshot metrics={snapshotMetrics} />
-        </section>
-
-        {/* Graph and community summary */}
-        <section className="grid grid-cols-1 items-start gap-6 xl:grid-cols-4">
-          <div className="min-w-0 xl:col-span-3">
-            <SNANetworkGraph />
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-12 text-slate-500">
+            <LoaderCircle className="mr-3 h-6 w-6 animate-spin text-emerald-600" />
+            <span>Loading community network data...</span>
           </div>
+        )}
 
-          <div className="min-w-0 xl:col-span-1">
-            <SNACommunitySummary />
+        {/* Error State */}
+        {error && (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-700">
+            <p className="font-semibold">Error loading community data</p>
+            <p className="mt-1 text-sm">{error}</p>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="mt-3 rounded-lg bg-rose-600 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-rose-700"
+            >
+              Retry
+            </button>
           </div>
-        </section>
+        )}
 
-        {/* Central nodes */}
-        <section>
-          <SNACentralNode />
-        </section>
+        {/* Content View */}
+        {!isLoading && !error && (
+          <>
+            {/* Empty State warning if no community result */}
+            {(!communityResult || communityResult.nodes.length === 0) && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-800 flex items-center justify-between">
+                <div>
+                  <p className="font-semibold">
+                    No community data available yet
+                  </p>
+                  <p className="mt-1 text-sm text-amber-700">
+                    Run community analysis to process network topology and
+                    uncover network clusters.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRunAnalysis}
+                  disabled={isTriggering}
+                  className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-medium text-white transition hover:bg-amber-700 disabled:opacity-50"
+                >
+                  {isTriggering ? (
+                    <LoaderCircle size={14} className="animate-spin" />
+                  ) : (
+                    <Play size={14} />
+                  )}
+                  Run Analysis
+                </button>
+              </div>
+            )}
 
-        {/* Conversation samples */}
-        <section>
-          <SNAConversation />
-        </section>
+            {/* Network snapshot */}
+            <section>
+              <SNASnapshot metrics={snapshotMetrics} />
+            </section>
+
+            {/* Graph and community summary */}
+            <section className="grid grid-cols-1 items-start gap-6 xl:grid-cols-4">
+              <div className="min-w-0 xl:col-span-3">
+                <SNANetworkGraph data={communityResult} />
+              </div>
+
+              <div className="min-w-0 xl:col-span-1">
+                <SNACommunitySummary />
+              </div>
+            </section>
+
+            {/* Central nodes */}
+            <section>
+              <SNACentralNode />
+            </section>
+
+            {/* Conversation samples */}
+            <section>
+              <SNAConversation />
+            </section>
+          </>
+        )}
       </div>
     </div>
   );

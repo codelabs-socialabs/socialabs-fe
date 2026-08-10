@@ -8,35 +8,57 @@ import React, {
   useMemo,
 } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
+import type { SNACommunityResult } from '@/types/project';
 
-// Generate mock graph data
+const PALETTE = [
+  '#10b981', // Emerald
+  '#f43f5e', // Rose
+  '#3b82f6', // Blue
+  '#f59e0b', // Amber
+  '#a855f7', // Purple
+  '#ec4899', // Pink
+  '#06b6d4', // Cyan
+  '#8b5cf6', // Violet
+  '#14b8a6', // Teal
+  '#f97316', // Orange
+];
+
+const getColorForCommunity = (commId: number | string): string => {
+  const numericId =
+    typeof commId === 'number' ? commId : parseInt(String(commId), 10) || 0;
+  return PALETTE[Math.abs(numericId) % PALETTE.length];
+};
+
+interface SNANetworkGraphProps {
+  data?: SNACommunityResult | null;
+}
+
+// Generate mock graph data as fallback
 const generateMockGraphData = () => {
   const nodes: any[] = [];
   const links: any[] = [];
 
-  // Clusters
   const clusters = [
-    { id: 1, color: '#10b981', size: 30, name: 'Cluster A' }, // Emerald
-    { id: 2, color: '#f43f5e', size: 20, name: 'Cluster B' }, // Rose
-    { id: 3, color: '#3b82f6', size: 15, name: 'Cluster C' }, // Blue
-    { id: 4, color: '#f59e0b', size: 10, name: 'Cluster D' }, // Amber
+    { id: 0, color: PALETTE[0], size: 30, name: 'Cluster A' },
+    { id: 1, color: PALETTE[1], size: 20, name: 'Cluster B' },
+    { id: 2, color: PALETTE[2], size: 15, name: 'Cluster C' },
+    { id: 3, color: PALETTE[3], size: 10, name: 'Cluster D' },
   ];
 
   let nodeId = 0;
 
   clusters.forEach((cluster) => {
     const clusterNodes = [];
-    // Create nodes for this cluster
     for (let i = 0; i < cluster.size; i++) {
       const id = `node_${nodeId++}`;
       clusterNodes.push(id);
-      // Size distribution: a few large nodes (influencers), many small ones
       const val = i === 0 ? 50 : i < 3 ? 25 : Math.random() * 8 + 4;
 
       nodes.push({
         id,
         val,
         color: cluster.color,
+        community: cluster.id,
         cluster: cluster.name,
         name:
           i === 0
@@ -45,9 +67,7 @@ const generateMockGraphData = () => {
       });
     }
 
-    // Create strong internal links for the cluster
     for (let i = 0; i < clusterNodes.length; i++) {
-      // Target the central node mostly
       const target =
         Math.random() > 0.3
           ? clusterNodes[0]
@@ -62,21 +82,66 @@ const generateMockGraphData = () => {
     }
   });
 
-  // Create weak inter-cluster bridges
-  links.push({ source: 'node_0', target: 'node_40', value: 1 }); // A to B
-  links.push({ source: 'node_2', target: 'node_42', value: 0.5 }); // A to B
-  links.push({ source: 'node_40', target: 'node_60', value: 1.5 }); // B to C
-  links.push({ source: 'node_0', target: 'node_80', value: 0.8 }); // A to D
+  links.push({ source: 'node_0', target: 'node_40', value: 1 });
+  links.push({ source: 'node_2', target: 'node_42', value: 0.5 });
+  links.push({ source: 'node_40', target: 'node_60', value: 1.5 });
+  links.push({ source: 'node_0', target: 'node_80', value: 0.8 });
 
   return { nodes, links };
 };
 
-const SNANetworkGraph: React.FC = () => {
+const SNANetworkGraph: React.FC<SNANetworkGraphProps> = ({ data }) => {
   const fgRef = useRef<any>(null);
-  const [graphData] = useState(() => generateMockGraphData());
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverNode, setHoverNode] = useState<any>(null);
+
+  const graphData = useMemo(() => {
+    if (!data || !data.nodes || data.nodes.length === 0) {
+      return generateMockGraphData();
+    }
+
+    // Calculate degree (connection count) for nodes missing `val`
+    const connectionCounts: Record<string, number> = {};
+    (data.edges || []).forEach((edge) => {
+      const src =
+        typeof edge.source === 'object' ? (edge.source as any).id : edge.source;
+      const tgt =
+        typeof edge.target === 'object' ? (edge.target as any).id : edge.target;
+      connectionCounts[src] = (connectionCounts[src] || 0) + 1;
+      connectionCounts[tgt] = (connectionCounts[tgt] || 0) + 1;
+    });
+
+    const formattedNodes = data.nodes.map((node) => {
+      const connCount = connectionCounts[node.id] || 0;
+      const val = node.val ?? 5 + connCount * 2;
+      const color = node.color ?? getColorForCommunity(node.community);
+      return {
+        ...node,
+        val,
+        color,
+        cluster: `Community ${node.community}`,
+      };
+    });
+
+    const formattedLinks = (data.edges || []).map((edge) => ({
+      source: edge.source,
+      target: edge.target,
+      value: edge.weight ?? 1,
+    }));
+
+    return { nodes: formattedNodes, links: formattedLinks };
+  }, [data]);
+
+  const uniqueCommunities = useMemo(() => {
+    const commSet = new Map<number, string>();
+    graphData.nodes.forEach((n: any) => {
+      if (n.community !== undefined && !commSet.has(n.community)) {
+        commSet.set(n.community, n.color);
+      }
+    });
+    return Array.from(commSet.entries()).slice(0, 6);
+  }, [graphData]);
 
   const highlightNodes = useMemo(() => new Set<string>(), []);
   const highlightLinks = useMemo(() => new Set<any>(), []);
@@ -91,11 +156,15 @@ const SNANetworkGraph: React.FC = () => {
       highlightLinks.clear();
       if (node) {
         highlightNodes.add(node.id);
-        graphData.links.forEach((link) => {
-          if (link.source.id === node.id || link.target.id === node.id) {
+        graphData.links.forEach((link: any) => {
+          const srcId =
+            typeof link.source === 'object' ? link.source.id : link.source;
+          const tgtId =
+            typeof link.target === 'object' ? link.target.id : link.target;
+          if (srcId === node.id || tgtId === node.id) {
             highlightLinks.add(link);
-            highlightNodes.add(link.source.id);
-            highlightNodes.add(link.target.id);
+            highlightNodes.add(srcId);
+            highlightNodes.add(tgtId);
           }
         });
       }
@@ -187,31 +256,21 @@ const SNANetworkGraph: React.FC = () => {
         </p>
       </div>
 
-      <div className="absolute bottom-6 left-6 z-10 pointer-events-none flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-          <span className="text-xs font-bold text-slate-300">
-            Cluster A (Public Policy)
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]"></div>
-          <span className="text-xs font-bold text-slate-300">
-            Cluster B (Protests)
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
-          <span className="text-xs font-bold text-slate-300">
-            Cluster C (Economy)
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
-          <span className="text-xs font-bold text-slate-300">
-            Cluster D (Satire)
-          </span>
-        </div>
+      <div className="absolute bottom-6 left-6 z-10 pointer-events-none flex flex-col gap-2 max-h-40 overflow-y-auto">
+        {uniqueCommunities.map(([commId, color]) => (
+          <div key={commId} className="flex items-center gap-2">
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{
+                backgroundColor: color,
+                boxShadow: `0 0 10px ${color}80`,
+              }}
+            />
+            <span className="text-xs font-bold text-slate-300">
+              Community {commId}
+            </span>
+          </div>
+        ))}
       </div>
 
       {/* Canvas Container */}
