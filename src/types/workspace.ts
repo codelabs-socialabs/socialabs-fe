@@ -32,6 +32,7 @@ export interface CreateWorkspaceResponse {
 
 export interface Workspace {
   id: string;
+  _id?: string;
   name: string;
   description: string;
   type: WorkspaceType;

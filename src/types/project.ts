@@ -134,3 +134,28 @@ export interface ProjectAnalytics {
   topUsers: AnalyticsTopUser[];
   topKeywords: AnalyticsTopKeyword[];
 }
+
+export interface Tweet {
+  id: string;
+  tweetId: string;
+  fullText: string;
+  createdAtTwitter: string | null;
+  quoteCount: number;
+  replyCount: number;
+  retweetCount: number;
+  favoriteCount: number;
+  lang: string;
+  userIdStr: string;
+  conversationIdStr: string;
+  tweetUrl: string;
+  imageUrl: string | null;
+  location: string | null;
+}
+
+export interface TweetListResult {
+  tweets: Tweet[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}

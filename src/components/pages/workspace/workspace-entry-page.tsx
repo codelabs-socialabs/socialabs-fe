@@ -51,7 +51,13 @@ const WorkspaceEntryPage = () => {
         const response = await workspaceApi.getWorkspaces();
         console.info(response);
 
-        setWorkspaces(response.data);
+        setWorkspaces(
+          response.data.map((w) => ({
+            ...w,
+            id: (w as { _id?: string; id: string })._id ?? w.id,
+            isPersonal: w.isPersonal ?? w.type === 'PERSONAL',
+          })),
+        );
       } catch (requestError) {
         if (requestError instanceof ApiError) {
           setError(requestError.message);

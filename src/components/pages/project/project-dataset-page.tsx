@@ -17,6 +17,10 @@ import {
   X,
 } from 'lucide-react';
 import { type ChangeEvent, type ReactNode, useMemo, useState } from 'react';
+import { useParams } from 'react-router';
+
+import { useProjectTweets } from '@/hooks/use-project-tweets';
+import type { Tweet } from '@/types/project';
 
 type DatasetStatus = 'included' | 'excluded' | 'duplicate' | 'processing';
 
@@ -61,6 +65,53 @@ interface DatasetPost {
   sourceUrl: string;
 }
 
+const mapTweetToPost = (tweet: Tweet): DatasetPost => {
+  const date = tweet.createdAtTwitter ? new Date(tweet.createdAtTwitter) : null;
+
+  const publishedAt = date
+    ? date.toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '-';
+
+  const publishedTime = date
+    ? date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    : '-';
+
+  const handle = tweet.userIdStr
+    ? `@user_${tweet.userIdStr.slice(-6)}`
+    : '@unknown';
+
+  return {
+    id: tweet.id,
+    externalId: tweet.tweetId,
+    authorName: tweet.userIdStr || 'Unknown',
+    authorHandle: handle,
+    authorInitials: (tweet.userIdStr || 'U').charAt(0).toUpperCase(),
+    content: tweet.fullText || '',
+    publishedAt,
+    publishedTime,
+    language: tweet.lang || 'Unknown',
+    type: 'original',
+    likes: tweet.favoriteCount,
+    replies: tweet.replyCount,
+    reposts: tweet.retweetCount,
+    quotes: tweet.quoteCount,
+    sentiment: 'unclassified',
+    sentimentConfidence: 0,
+    emotion: 'Unclassified',
+    emotionConfidence: 0,
+    topic: 'Unclassified',
+    status: 'included',
+    sourceUrl: tweet.tweetUrl || '',
+  };
+};
+
 interface SummaryItemProps {
   label: string;
   value: string;
@@ -77,201 +128,6 @@ interface ToggleProps {
   onChange: (checked: boolean) => void;
   label: string;
 }
-
-const initialDataset: DatasetPost[] = [
-  {
-    id: 'row-001',
-    externalId: 'tweet-188923001',
-    authorName: 'Mahasiswa Unpad',
-    authorHandle: '@mahasiswakeren',
-    authorInitials: 'MU',
-    content:
-      'Hari ini dapat jatah MBG, tetapi ayamnya keras dan porsinya cukup sedikit. Semoga kualitasnya bisa segera diperbaiki.',
-    publishedAt: 'Feb 12, 2026',
-    publishedTime: '10:42 AM',
-    language: 'Indonesian',
-    type: 'original',
-    likes: 920,
-    replies: 114,
-    reposts: 214,
-    quotes: 32,
-    sentiment: 'negative',
-    sentimentConfidence: 94,
-    emotion: 'Anger',
-    emotionConfidence: 87,
-    topic: 'Food Quality',
-    status: 'included',
-    sourceUrl: 'https://x.com/example/status/188923001',
-  },
-  {
-    id: 'row-002',
-    externalId: 'tweet-188923002',
-    authorName: 'Info Jatinangor',
-    authorHandle: '@infojatinangor',
-    authorInitials: 'IJ',
-    content:
-      'Program makan bergizi gratis mulai dibagikan di beberapa sekolah wilayah Jatinangor pagi ini.',
-    publishedAt: 'Feb 12, 2026',
-    publishedTime: '09:15 AM',
-    language: 'Indonesian',
-    type: 'original',
-    likes: 642,
-    replies: 45,
-    reposts: 126,
-    quotes: 18,
-    sentiment: 'neutral',
-    sentimentConfidence: 91,
-    emotion: 'Surprise',
-    emotionConfidence: 63,
-    topic: 'Program Distribution',
-    status: 'included',
-    sourceUrl: 'https://x.com/example/status/188923002',
-  },
-  {
-    id: 'row-003',
-    externalId: 'tweet-188923003',
-    authorName: 'Warga Sumedang',
-    authorHandle: '@wargasumedang',
-    authorInitials: 'WS',
-    content:
-      'Anak saya senang dengan menu hari ini. Semoga program seperti ini bisa terus berjalan dan semakin merata.',
-    publishedAt: 'Feb 11, 2026',
-    publishedTime: '01:08 PM',
-    language: 'Indonesian',
-    type: 'reply',
-    likes: 411,
-    replies: 29,
-    reposts: 75,
-    quotes: 9,
-    sentiment: 'positive',
-    sentimentConfidence: 96,
-    emotion: 'Joy',
-    emotionConfidence: 92,
-    topic: 'Public Support',
-    status: 'included',
-    sourceUrl: 'https://x.com/example/status/188923003',
-  },
-  {
-    id: 'row-004',
-    externalId: 'tweet-188923004',
-    authorName: 'Media Kampus',
-    authorHandle: '@mediakampus',
-    authorInitials: 'MK',
-    content:
-      'Distribusi terlambat hampir dua jam di salah satu titik. Pihak sekolah menyebut adanya kendala logistik.',
-    publishedAt: 'Feb 11, 2026',
-    publishedTime: '11:30 AM',
-    language: 'Indonesian',
-    type: 'quote',
-    likes: 785,
-    replies: 128,
-    reposts: 203,
-    quotes: 47,
-    sentiment: 'negative',
-    sentimentConfidence: 89,
-    emotion: 'Sadness',
-    emotionConfidence: 72,
-    topic: 'Distribution Delay',
-    status: 'included',
-    sourceUrl: 'https://x.com/example/status/188923004',
-  },
-  {
-    id: 'row-005',
-    externalId: 'tweet-188923005',
-    authorName: 'Promo Murah',
-    authorHandle: '@promomurahbanget',
-    authorInitials: 'PM',
-    content:
-      'Ikuti giveaway produk gratis dengan menggunakan tagar MBG Jatinangor.',
-    publishedAt: 'Feb 10, 2026',
-    publishedTime: '04:15 PM',
-    language: 'Indonesian',
-    type: 'repost',
-    likes: 18,
-    replies: 3,
-    reposts: 54,
-    quotes: 0,
-    sentiment: 'unclassified',
-    sentimentConfidence: 0,
-    emotion: 'Unclassified',
-    emotionConfidence: 0,
-    topic: 'Unclassified',
-    status: 'excluded',
-    sourceUrl: 'https://x.com/example/status/188923005',
-  },
-  {
-    id: 'row-006',
-    externalId: 'tweet-188923006',
-    authorName: 'Berita Hari Ini',
-    authorHandle: '@beritahariini',
-    authorInitials: 'BH',
-    content:
-      'Pelaksanaan program MBG di Jatinangor mendapat sorotan setelah beberapa unggahan warga ramai dibicarakan.',
-    publishedAt: 'Feb 10, 2026',
-    publishedTime: '02:54 PM',
-    language: 'Indonesian',
-    type: 'original',
-    likes: 1150,
-    replies: 184,
-    reposts: 386,
-    quotes: 96,
-    sentiment: 'neutral',
-    sentimentConfidence: 86,
-    emotion: 'Surprise',
-    emotionConfidence: 74,
-    topic: 'Media Coverage',
-    status: 'included',
-    sourceUrl: 'https://x.com/example/status/188923006',
-  },
-  {
-    id: 'row-007',
-    externalId: 'tweet-188923007',
-    authorName: 'Suara Pelajar',
-    authorHandle: '@suarapelajar',
-    authorInitials: 'SP',
-    content:
-      'Menunya lumayan, tetapi penyajiannya perlu diperhatikan supaya makanan tetap hangat saat dibagikan.',
-    publishedAt: 'Feb 9, 2026',
-    publishedTime: '12:22 PM',
-    language: 'Indonesian',
-    type: 'reply',
-    likes: 327,
-    replies: 49,
-    reposts: 68,
-    quotes: 11,
-    sentiment: 'neutral',
-    sentimentConfidence: 78,
-    emotion: 'Disgust',
-    emotionConfidence: 61,
-    topic: 'Food Quality',
-    status: 'processing',
-    sourceUrl: 'https://x.com/example/status/188923007',
-  },
-  {
-    id: 'row-008',
-    externalId: 'tweet-188923008',
-    authorName: 'Jatinangor Update',
-    authorHandle: '@jatinangorupdate',
-    authorInitials: 'JU',
-    content:
-      'Program MBG mulai berjalan hari ini di sejumlah sekolah wilayah Jatinangor.',
-    publishedAt: 'Feb 9, 2026',
-    publishedTime: '08:40 AM',
-    language: 'Indonesian',
-    type: 'original',
-    likes: 521,
-    replies: 31,
-    reposts: 92,
-    quotes: 15,
-    sentiment: 'neutral',
-    sentimentConfidence: 90,
-    emotion: 'Surprise',
-    emotionConfidence: 68,
-    topic: 'Program Distribution',
-    status: 'duplicate',
-    sourceUrl: 'https://x.com/example/status/188923008',
-  },
-];
 
 const columnOptions: Array<{
   id: DatasetColumn;
@@ -307,16 +163,6 @@ const columnOptions: Array<{
     id: 'status',
     label: 'Status',
   },
-];
-
-const topicOptions = [
-  'all',
-  'Food Quality',
-  'Program Distribution',
-  'Public Support',
-  'Distribution Delay',
-  'Media Coverage',
-  'Unclassified',
 ];
 
 const formatNumber = (value: number): string => {
@@ -419,8 +265,38 @@ const getPostTypeLabel = (type: PostType): string => {
   return labels[type];
 };
 
+interface ProjectRouteParams {
+  workspaceId: string;
+  projectId: string;
+  [key: string]: string | undefined;
+}
+
 const ProjectDatasetPage = () => {
-  const [dataset, setDataset] = useState<DatasetPost[]>(initialDataset);
+  const { workspaceId, projectId } = useParams<ProjectRouteParams>();
+  const {
+    data: tweetData,
+    isLoading,
+    refetch,
+  } = useProjectTweets(workspaceId ?? '', projectId ?? '');
+
+  const dataset = useMemo<DatasetPost[]>(
+    () => (tweetData?.tweets ?? []).map(mapTweetToPost),
+    [tweetData],
+  );
+
+  const [statusOverrides, setStatusOverrides] = useState<
+    Record<string, DatasetStatus>
+  >({});
+
+  const effectiveDataset = useMemo(
+    () =>
+      dataset.map((post) =>
+        statusOverrides[post.id]
+          ? { ...post, status: statusOverrides[post.id] }
+          : post,
+      ),
+    [dataset, statusOverrides],
+  );
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -448,7 +324,7 @@ const ProjectDatasetPage = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
 
   const [exportFormat, setExportFormat] = useState<ExportFormat>('csv');
 
@@ -468,10 +344,17 @@ const ProjectDatasetPage = () => {
     status: true,
   });
 
+  const topicOptions = useMemo(() => {
+    const topics = new Set(
+      effectiveDataset.map((p) => p.topic).filter(Boolean),
+    );
+    return ['all', ...Array.from(topics)];
+  }, [effectiveDataset]);
+
   const filteredDataset = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    return dataset.filter((post) => {
+    return effectiveDataset.filter((post) => {
       const matchesSearch =
         normalizedQuery.length === 0 ||
         post.content.toLowerCase().includes(normalizedQuery) ||
@@ -490,12 +373,13 @@ const ProjectDatasetPage = () => {
 
       return matchesSearch && matchesSentiment && matchesTopic && matchesStatus;
     });
-  }, [dataset, searchQuery, sentimentFilter, topicFilter, statusFilter]);
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredDataset.length / rowsPerPage),
-  );
+  }, [
+    effectiveDataset,
+    searchQuery,
+    sentimentFilter,
+    topicFilter,
+    statusFilter,
+  ]);
 
   const paginatedDataset = useMemo(() => {
     const startIndex = (currentPage - 1) * rowsPerPage;
@@ -514,8 +398,8 @@ const ProjectDatasetPage = () => {
   ].filter(Boolean).length;
 
   const selectedPosts = useMemo(
-    () => dataset.filter((post) => selectedRows.includes(post.id)),
-    [dataset, selectedRows],
+    () => effectiveDataset.filter((post) => selectedRows.includes(post.id)),
+    [effectiveDataset, selectedRows],
   );
 
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>): void => {
@@ -550,31 +434,19 @@ const ProjectDatasetPage = () => {
       return;
     }
 
-    setDataset((currentDataset) =>
-      currentDataset.map((post) =>
-        selectedRows.includes(post.id)
-          ? {
-              ...post,
-              status,
-            }
-          : post,
-      ),
-    );
+    setStatusOverrides((current) => {
+      const next = { ...current };
+      for (const id of selectedRows) {
+        next[id] = status;
+      }
+      return next;
+    });
 
     setSelectedRows([]);
   };
 
   const updateSingleStatus = (postId: string, status: DatasetStatus): void => {
-    setDataset((currentDataset) =>
-      currentDataset.map((post) =>
-        post.id === postId
-          ? {
-              ...post,
-              status,
-            }
-          : post,
-      ),
-    );
+    setStatusOverrides((current) => ({ ...current, [postId]: status }));
 
     setSelectedPost((currentPost) => {
       if (!currentPost || currentPost.id !== postId) {
@@ -672,33 +544,45 @@ const ProjectDatasetPage = () => {
               <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
                 <SummaryItem
                   label="Total collected"
-                  value="35,400"
+                  value={formatNumber(tweetData?.total ?? 0)}
                   description="All collected posts"
                 />
 
                 <SummaryItem
                   label="Included"
-                  value="33,820"
+                  value={formatNumber(
+                    effectiveDataset.filter((p) => p.status === 'included')
+                      .length,
+                  )}
                   description="Used in analysis"
                 />
 
                 <SummaryItem
                   label="Excluded"
-                  value="1,020"
+                  value={formatNumber(
+                    effectiveDataset.filter((p) => p.status === 'excluded')
+                      .length,
+                  )}
                   description="Ignored from analysis"
                 />
 
                 <SummaryItem
                   label="Duplicates"
-                  value="560"
+                  value="0"
                   description="Detected duplicate posts"
                 />
               </div>
 
               <div className="mt-5 flex flex-col gap-2 border-t border-slate-100 pt-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-                <span>Last collected: February 15, 2026</span>
+                <span>
+                  {tweetData
+                    ? `Page ${tweetData.page} of ${tweetData.totalPages}`
+                    : 'Loading...'}
+                </span>
 
-                <span>Dataset size: 128 MB</span>
+                <span>
+                  Total records: {formatNumber(tweetData?.total ?? 0)}
+                </span>
               </div>
             </section>
 
@@ -1294,7 +1178,18 @@ const ProjectDatasetPage = () => {
                   </tbody>
                 </table>
 
-                {paginatedDataset.length === 0 && (
+                {isLoading && (
+                  <div className="flex flex-col items-center px-6 py-16 text-center">
+                    <div className="flex size-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+                      <Database size={21} className="animate-pulse" />
+                    </div>
+                    <h3 className="mt-4 text-sm font-semibold text-slate-900">
+                      Loading tweets...
+                    </h3>
+                  </div>
+                )}
+
+                {!isLoading && paginatedDataset.length === 0 && (
                   <div className="flex flex-col items-center px-6 py-16 text-center">
                     <div className="flex size-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
                       <Search size={21} />
@@ -1327,9 +1222,10 @@ const ProjectDatasetPage = () => {
                   <select
                     value={rowsPerPage}
                     onChange={(event) => {
-                      setRowsPerPage(Number(event.target.value));
-
+                      const newLimit = Number(event.target.value);
+                      setRowsPerPage(newLimit);
                       setCurrentPage(1);
+                      refetch(1, newLimit);
                     }}
                     className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-red-400"
                   >
@@ -1337,46 +1233,51 @@ const ProjectDatasetPage = () => {
                     <option value={10}>10</option>
                     <option value={25}>25</option>
                     <option value={50}>50</option>
+                    <option value={100}>100</option>
                   </select>
 
                   <span>
-                    Showing{' '}
-                    {filteredDataset.length === 0
-                      ? 0
-                      : (currentPage - 1) * rowsPerPage + 1}
-                    –
-                    {Math.min(
-                      currentPage * rowsPerPage,
-                      filteredDataset.length,
-                    )}{' '}
-                    of {formatNumber(filteredDataset.length)}
+                    {tweetData
+                      ? `Showing ${(tweetData.page - 1) * tweetData.limit + 1}–${Math.min(tweetData.page * tweetData.limit, tweetData.total)} of ${formatNumber(tweetData.total)}`
+                      : 'Loading...'}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    disabled={currentPage === 1}
-                    onClick={() =>
-                      setCurrentPage((current) => Math.max(1, current - 1))
-                    }
+                    disabled={currentPage === 1 || isLoading}
+                    onClick={() => {
+                      const newPage = Math.max(1, currentPage - 1);
+                      setCurrentPage(newPage);
+                      refetch(newPage, rowsPerPage);
+                    }}
                     className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <ChevronLeft size={16} />
                   </button>
 
                   <span className="min-w-24 text-center text-xs font-medium text-slate-600">
-                    Page {currentPage} of {totalPages}
+                    {tweetData
+                      ? `Page ${tweetData.page} of ${tweetData.totalPages}`
+                      : 'Loading...'}
                   </span>
 
                   <button
                     type="button"
-                    disabled={currentPage >= totalPages}
-                    onClick={() =>
-                      setCurrentPage((current) =>
-                        Math.min(totalPages, current + 1),
-                      )
+                    disabled={
+                      !tweetData ||
+                      currentPage >= tweetData.totalPages ||
+                      isLoading
                     }
+                    onClick={() => {
+                      const newPage = Math.min(
+                        tweetData?.totalPages ?? 1,
+                        currentPage + 1,
+                      );
+                      setCurrentPage(newPage);
+                      refetch(newPage, rowsPerPage);
+                    }}
                     className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <ChevronRight size={16} />

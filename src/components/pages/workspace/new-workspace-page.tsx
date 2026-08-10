@@ -300,16 +300,19 @@ const NewWorkspacePage = () => {
         minimumLoadingDelay,
       ]);
 
-      addWorkspace(response.data);
+      const workspace = response.data;
+      const workspaceId = workspace._id ?? workspace.id;
+
+      addWorkspace(workspace);
 
       toast.success('Workspace created successfully.', {
-        description: `Opening ${response.data.name}...`,
+        description: `Opening ${workspace.name}...`,
         duration: 2400,
       });
 
       await delay(600);
 
-      navigate(`/workspaces/${response.data.id}/overview`, {
+      navigate(`/workspaces/${workspaceId}/overview`, {
         replace: true,
       });
     } catch (error) {

@@ -1,81 +1,29 @@
+import { LoaderCircle } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { Navigate, Outlet, useParams } from 'react-router';
 
 import ProjectNavbar from '@/components/fragments/navbar';
 import ProjectSidebar from '@/components/fragments/project/project-sidebar';
+import { useProjectStore } from '@/stores/project-store';
 import { useWorkspaceStore } from '@/stores/workspace-store';
-import type {
-  Project,
-  ProjectCategory,
-  ProjectLanguage,
-  ProjectStatus,
-} from '@/types/project';
+import type { Project } from '@/types/project';
 
 interface ProjectRouteParams {
   workspaceId: string;
   projectId: string;
 }
 
-/*
- * Data dummy project sementara.
- *
- * Nanti bagian ini bisa dihapus ketika ProjectLayout
- * sudah memakai data asli dari project store/API.
- */
-const createDummyProject = (
-  workspaceId: string,
-  projectId: string,
-): Project => {
-  return {
-    id: projectId,
-    workspaceId,
-
-    name: 'Public Sentiment Toward Artificial Intelligence',
-
-    description:
-      'Analyze public conversations about the adoption, benefits, and concerns surrounding artificial intelligence in Indonesia.',
-
-    category: 'MARKETING' as ProjectCategory,
-
-    keyword: 'artificial intelligence Indonesia',
-
-    startDate: '2026-07-01T00:00:00.000Z',
-    endDate: '2026-07-30T23:59:59.000Z',
-
-    language: 'ID' as ProjectLanguage,
-
-    /*
-     * Struktur backend terbaru.
-     */
-    processing: {
-      status: 'CRAWLING' as ProjectStatus,
-      stage: 'CRAWLING',
-      progress: 62,
-      error: null,
-    },
-
-    totalTweets: 10_000,
-    crawledTweets: 6_240,
-    topicCounte: 0,
-
-    createdAt: '2026-07-30T08:15:00.000Z',
-    updatedAt: '2026-07-31T03:40:00.000Z',
-
-    /*
-     * Compatibility field untuk UI lama.
-     */
-    status: 'CRAWLING' as ProjectStatus,
-    isArchived: false,
-    dataLimit: 10_000,
-    tweetsRetrieved: 6_240,
-    topicsCount: 0,
-  };
-};
+const EMPTY_PROJECTS: Project[] = [];
 
 const ProjectLayout = () => {
   const { workspaceId, projectId } = useParams<ProjectRouteParams>();
 
   const workspaces = useWorkspaceStore((state) => state.workspaces);
+  const isWorkspaceLoading = useWorkspaceStore((state) => state.isLoading);
+  const isWorkspaceInitialized = useWorkspaceStore(
+    (state) => state.isInitialized,
+  );
+  const fetchWorkspaces = useWorkspaceStore((state) => state.fetchWorkspaces);
 
   const activeWorkspaceId = useWorkspaceStore(
     (state) => state.activeWorkspaceId,
@@ -85,6 +33,24 @@ const ProjectLayout = () => {
     (state) => state.setActiveWorkspace,
   );
 
+  const fetchProjects = useProjectStore((state) => state.fetchProjects);
+  const fetchProjectById = useProjectStore((state) => state.fetchProjectById);
+  const projects = useProjectStore(
+    (state) => state.projectsByWorkspace[workspaceId ?? ''] ?? EMPTY_PROJECTS,
+  );
+
+  useEffect(() => {
+    if (!isWorkspaceInitialized && !isWorkspaceLoading) {
+      void fetchWorkspaces();
+    }
+  }, [fetchWorkspaces, isWorkspaceInitialized, isWorkspaceLoading]);
+
+  useEffect(() => {
+    if (workspaceId) {
+      fetchProjects(workspaceId);
+    }
+  }, [workspaceId, fetchProjects]);
+
   const workspace = useMemo(() => {
     if (!workspaceId) {
       return undefined;
@@ -93,19 +59,13 @@ const ProjectLayout = () => {
     return workspaces.find((item) => item.id === workspaceId);
   }, [workspaceId, workspaces]);
 
-  /*
-   * Data project langsung dibuat dari route param.
-   *
-   * Project tetap memiliki projectId dan workspaceId
-   * sesuai URL yang sedang dibuka.
-   */
   const project = useMemo(() => {
     if (!workspaceId || !projectId) {
       return undefined;
     }
 
-    return createDummyProject(workspaceId, projectId);
-  }, [projectId, workspaceId]);
+    return projects.find((item) => item.id === projectId);
+  }, [projectId, workspaceId, projects]);
 
   useEffect(() => {
     if (!workspace || activeWorkspaceId === workspace.id) {
@@ -115,20 +75,52 @@ const ProjectLayout = () => {
     setActiveWorkspace(workspace.id);
   }, [activeWorkspaceId, setActiveWorkspace, workspace]);
 
+  const isProjectsInitialized = useProjectStore((state) =>
+    state.initializedWorkspaceIds.includes(workspaceId ?? ''),
+  );
+
+  useEffect(() => {
+    if (!workspaceId || !projectId || project || !isProjectsInitialized) {
+      return;
+    }
+
+    void fetchProjectById(workspaceId, projectId);
+  }, [
+    workspaceId,
+    projectId,
+    project,
+    isProjectsInitialized,
+    fetchProjectById,
+  ]);
+
   if (!workspaceId || !projectId) {
     return <Navigate to="/workspaces" replace />;
+  }
+
+  if (!isWorkspaceInitialized || isWorkspaceLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="flex items-center gap-3 text-sm text-slate-500">
+          <LoaderCircle className="h-5 w-5 animate-spin text-red-600" />
+          <span>Loading workspace...</span>
+        </div>
+      </div>
+    );
   }
 
   if (!workspace) {
     return <Navigate to="/workspaces" replace />;
   }
 
-  /*
-   * Sebenarnya kondisi ini hampir tidak akan terjadi
-   * karena project dibuat langsung dari route param.
-   */
   if (!project) {
-    return <Navigate to={`/workspaces/${workspace.id}/projects`} replace />;
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="flex items-center gap-3 text-sm text-slate-500">
+          <LoaderCircle className="h-5 w-5 animate-spin text-red-600" />
+          <span>Loading project...</span>
+        </div>
+      </div>
+    );
   }
 
   return (

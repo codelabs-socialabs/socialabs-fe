@@ -5,6 +5,7 @@ import type {
   CreateProjectInput,
   Project,
   ProjectAnalytics,
+  TweetListResult,
   UpdateProjectInput,
 } from '@/types/project';
 
@@ -36,6 +37,12 @@ interface AnalyticsResponse {
   message: string;
   status: boolean;
   data: ProjectAnalytics;
+}
+
+interface TweetListResponse {
+  message: string;
+  status: boolean;
+  data: TweetListResult;
 }
 
 export const projectApi = {
@@ -123,6 +130,21 @@ export const projectApi = {
   ): Promise<AnalyticsResponse> => {
     return apiClient<AnalyticsResponse>(
       `/workspaces/${workspaceId}/projects/${projectId}/analytics`,
+      {
+        method: 'GET',
+        requireAuth: true,
+      },
+    );
+  },
+
+  getProjectTweets: async (
+    workspaceId: string,
+    projectId: string,
+    page = 1,
+    limit = 25,
+  ): Promise<TweetListResponse> => {
+    return apiClient<TweetListResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/tweets?page=${page}&limit=${limit}`,
       {
         method: 'GET',
         requireAuth: true,
