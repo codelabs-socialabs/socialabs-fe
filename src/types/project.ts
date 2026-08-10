@@ -34,6 +34,7 @@ export interface ProjectProcessing {
 
 export interface Project {
   id: string;
+  _id?: string;
   workspaceId: string;
 
   name: string;

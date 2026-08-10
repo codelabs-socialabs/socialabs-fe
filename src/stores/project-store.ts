@@ -150,6 +150,8 @@ const normalizeProject = (project: Project, workspaceId: string): Project => {
   return {
     ...project,
 
+    id: project._id ?? project.id,
+
     workspaceId: project.workspaceId ?? workspaceId,
 
     description: project.description ?? '',
