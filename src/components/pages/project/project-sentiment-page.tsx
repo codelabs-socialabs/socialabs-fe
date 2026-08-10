@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router';
 import { toast } from 'sonner';
 
-import { defaultFontSize, useWordCloud } from '@isoterik/react-word-cloud';
+import { useWordCloud } from '@isoterik/react-word-cloud';
 import type { Word, WordCloudProps } from '@isoterik/react-word-cloud';
 import {
   Cell,
@@ -326,12 +326,12 @@ const ProjectSentimentPage = () => {
 
         {/* Word cloud */}
         {!wordLoading && wordFrequency && wordFrequency.positive.length > 0 && (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <div className="flex flex-col items-center">
+          <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white p-6">
               <h2 className="mb-4 text-sm font-semibold text-slate-900">
                 Positive Keywords
               </h2>
-              <div className="h-[300px] w-full">
+              <div className="h-[360px] w-full">
                 {positiveWords.length > 0 ? (
                   <CustomWordCloud words={positiveWords} type="positive" />
                 ) : (
@@ -341,11 +341,11 @@ const ProjectSentimentPage = () => {
                 )}
               </div>
             </div>
-            <div className="flex flex-col items-center">
+            <div className="rounded-xl border border-slate-200 bg-white p-6">
               <h2 className="mb-4 text-sm font-semibold text-slate-900">
                 Negative Keywords
               </h2>
-              <div className="h-[300px] w-full">
+              <div className="h-[360px] w-full">
                 {negativeWords.length > 0 ? (
                   <CustomWordCloud words={negativeWords} type="negative" />
                 ) : (
@@ -355,7 +355,7 @@ const ProjectSentimentPage = () => {
                 )}
               </div>
             </div>
-          </div>
+          </section>
         )}
 
         {/* Representative posts */}
@@ -447,8 +447,8 @@ const CustomWordCloud = ({
   const [hoveredWord, setHoveredWord] = useState<Word | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  const WIDTH = 400;
-  const HEIGHT = 300;
+  const WIDTH = 600;
+  const HEIGHT = 400;
 
   const positiveColors = [
     '#059669',
@@ -466,17 +466,26 @@ const CustomWordCloud = ({
   ];
   const colors = type === 'positive' ? positiveColors : negativeColors;
 
+  const minVal = Math.min(...words.map((w) => w.value), 1);
+  const maxVal = Math.max(...words.map((w) => w.value), minVal + 1);
+
+  const resolveFontSize = (word: Word) => {
+    if (minVal === maxVal) return 24;
+    const normalized = (word.value - minVal) / (maxVal - minVal);
+    return Math.round(16 + normalized * 32);
+  };
+
   const { computedWords } = useWordCloud({
     words,
     width: WIDTH,
     height: HEIGHT,
     font: 'Inter, sans-serif',
     fontWeight: resolveFontWeight,
-    fontSize: defaultFontSize,
+    fontSize: resolveFontSize,
     rotate: resolveRotate,
     fontStyle: 'normal',
     spiral: 'rectangular',
-    padding: 5,
+    padding: 6,
     timeInterval: 1,
     random: resolveRandom,
   });
