@@ -5,6 +5,8 @@ import type {
   CreateProjectInput,
   Project,
   ProjectAnalytics,
+  Topic,
+  TopicDocument,
   TweetListResult,
   UpdateProjectInput,
 } from '@/types/project';
@@ -43,6 +45,24 @@ interface TweetListResponse {
   message: string;
   status: boolean;
   data: TweetListResult;
+}
+
+interface TopicListResponse {
+  message: string;
+  status: boolean;
+  data: Topic[];
+}
+
+interface TopicDocumentsResponse {
+  message: string;
+  status: boolean;
+  data: TopicDocument[];
+}
+
+interface ProcessTopicsResponse {
+  message: string;
+  status: boolean;
+  data: boolean;
 }
 
 export const projectApi = {
@@ -147,6 +167,46 @@ export const projectApi = {
       `/workspaces/${workspaceId}/projects/${projectId}/tweets?page=${page}&limit=${limit}`,
       {
         method: 'GET',
+        requireAuth: true,
+      },
+    );
+  },
+
+  getProjectTopics: async (
+    workspaceId: string,
+    projectId: string,
+  ): Promise<TopicListResponse> => {
+    return apiClient<TopicListResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/topics`,
+      {
+        method: 'GET',
+        requireAuth: true,
+      },
+    );
+  },
+
+  getTopicDocuments: async (
+    workspaceId: string,
+    projectId: string,
+    topicId?: number,
+  ): Promise<TopicDocumentsResponse> => {
+    const url = topicId
+      ? `/workspaces/${workspaceId}/projects/${projectId}/topics/documents?topicId=${topicId}`
+      : `/workspaces/${workspaceId}/projects/${projectId}/topics/documents`;
+    return apiClient<TopicDocumentsResponse>(url, {
+      method: 'GET',
+      requireAuth: true,
+    });
+  },
+
+  processTopics: async (
+    workspaceId: string,
+    projectId: string,
+  ): Promise<ProcessTopicsResponse> => {
+    return apiClient<ProcessTopicsResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/topics/process`,
+      {
+        method: 'POST',
         requireAuth: true,
       },
     );

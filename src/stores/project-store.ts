@@ -5,6 +5,8 @@ import type {
   CreateProjectInput,
   Project,
   ProjectAnalytics,
+  ProjectStage,
+  Topic,
   UpdateProjectInput,
 } from '@/types/project';
 
@@ -35,6 +37,17 @@ interface ProjectState {
   analyticsByProjectId: Record<string, ProjectAnalytics | null>;
   analyticsLoadingIds: string[];
   failedAnalyticsFetchIds: string[];
+
+  topicsByProjectId: Record<string, Topic[]>;
+  topicsLoadingIds: string[];
+
+  isTopicsLoading: (projectId: string) => boolean;
+  getTopics: (projectId: string) => Topic[] | null;
+
+  fetchProjectTopics: (
+    workspaceId: string,
+    projectId: string,
+  ) => Promise<Topic[] | null>;
 
   isAnalyticsLoading: (projectId: string) => boolean;
   hasAnalyticsFailed: (projectId: string) => boolean;
@@ -103,6 +116,9 @@ const initialState = {
   analyticsByProjectId: {} as Record<string, ProjectAnalytics | null>,
   analyticsLoadingIds: [] as string[],
   failedAnalyticsFetchIds: [] as string[],
+
+  topicsByProjectId: {} as Record<string, Topic[]>,
+  topicsLoadingIds: [] as string[],
 
   error: null as string | null,
 };
@@ -603,19 +619,19 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
         updatedWorkspaces[workspaceId] = projects.map((project) =>
           project.id === projectId
-            ? {
+            ? ({
                 ...project,
                 processing: {
                   ...project.processing,
                   status: event.status,
-                  stage: event.stage ?? null,
+                  stage: (event.stage as ProjectStage) ?? null,
                   progress: event.progress,
                   error: event.error ?? null,
                 },
                 crawledTweets: event.crawledTweets ?? project.crawledTweets,
                 tweetsRetrieved: event.crawledTweets ?? project.tweetsRetrieved,
                 status: event.status,
-              }
+              } as unknown as Project)
             : project,
         );
       }
@@ -687,6 +703,54 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }
   },
 
+  isTopicsLoading: (projectId): boolean => {
+    return get().topicsLoadingIds.includes(projectId);
+  },
+
+  getTopics: (projectId): Topic[] | null => {
+    return get().topicsByProjectId[projectId] ?? null;
+  },
+
+  fetchProjectTopics: async (
+    workspaceId,
+    projectId,
+  ): Promise<Topic[] | null> => {
+    if (get().topicsLoadingIds.includes(projectId)) {
+      return get().topicsByProjectId[projectId] ?? null;
+    }
+
+    set((current) => ({
+      topicsLoadingIds: addUniqueValue(current.topicsLoadingIds, projectId),
+    }));
+
+    try {
+      const response = await projectApi.getProjectTopics(
+        workspaceId,
+        projectId,
+      );
+
+      const topics = Array.isArray(response.data) ? response.data : [];
+
+      set((current) => ({
+        topicsByProjectId: {
+          ...current.topicsByProjectId,
+          [projectId]: topics,
+        },
+      }));
+
+      return topics;
+    } catch (error) {
+      set({
+        error: getErrorMessage(error, 'Unable to load topics.'),
+      });
+      return null;
+    } finally {
+      set((current) => ({
+        topicsLoadingIds: removeValue(current.topicsLoadingIds, projectId),
+      }));
+    }
+  },
+
   resetProjectStore: (): void => {
     set({
       projectsByWorkspace: {},
@@ -698,6 +762,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       analyticsByProjectId: {},
       analyticsLoadingIds: [],
       failedAnalyticsFetchIds: [],
+      topicsByProjectId: {},
+      topicsLoadingIds: [],
       error: null,
     });
   },

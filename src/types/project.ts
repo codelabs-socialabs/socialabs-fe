@@ -159,3 +159,24 @@ export interface TweetListResult {
   limit: number;
   totalPages: number;
 }
+
+export interface Topic {
+  id: string;
+  topicId: number;
+  projectId: string;
+  keyword: string;
+  words: string[];
+  context: string;
+  documentCount?: number;
+}
+
+export interface TopicDocument {
+  id: string;
+  projectId: string;
+  fullText: string;
+  rawText: string;
+  username: string;
+  tweetUrl: string;
+  topic: number;
+  probability: number;
+}
