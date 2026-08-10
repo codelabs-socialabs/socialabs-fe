@@ -494,11 +494,11 @@ const WorkspacePage = () => {
   }, [workspaceId, workspaces]);
 
   if (!workspaceId) {
-    return <Navigate to="/workspace" replace />;
+    return <Navigate to="/workspaces" replace />;
   }
 
   if (!activeWorkspace) {
-    return <Navigate to="/workspace" replace />;
+    return <Navigate to="/workspaces" replace />;
   }
 
   return (

@@ -230,11 +230,11 @@ const WorkspaceOverviewPage = () => {
   }, [workspaceId]);
 
   if (!workspaceId) {
-    return <Navigate to="/workspace" replace />;
+    return <Navigate to="/workspaces" replace />;
   }
 
   if (!workspace) {
-    return <Navigate to="/workspace" replace />;
+    return <Navigate to="/workspaces" replace />;
   }
 
   if (isLoadingProjects || !isProjectsInitialized) {

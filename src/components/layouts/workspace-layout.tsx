@@ -133,7 +133,7 @@ const WorkspaceLayout = () => {
   }, [activeWorkspaceId, setActiveWorkspace, workspace]);
 
   if (!workspaceId) {
-    return <Navigate to="/workspace" replace />;
+    return <Navigate to="/workspaces" replace />;
   }
 
   /*
@@ -177,7 +177,7 @@ const WorkspaceLayout = () => {
    * - backend mengembalikan 403 atau 404.
    */
   if (!workspace) {
-    return <Navigate to="/workspace" replace />;
+    return <Navigate to="/workspaces" replace />;
   }
 
   return (
