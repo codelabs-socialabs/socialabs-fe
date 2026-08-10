@@ -29,6 +29,7 @@ export interface ProjectProcessing {
   stage?: ProjectStage | null;
   progress: number;
   error?: ProjectProcessingError | null;
+  jobId?: string | null;
 }
 
 export interface Project {
@@ -96,4 +97,39 @@ export interface NewProjectForm {
   keyword: string;
   startDate: string;
   endDate: string;
+}
+
+export interface AnalyticsTweetsOverTime {
+  date: string;
+  count: number;
+}
+
+export interface AnalyticsEngagement {
+  date: string;
+  likes: number;
+  retweets: number;
+  replies: number;
+}
+
+export interface AnalyticsLanguage {
+  lang: string;
+  count: number;
+}
+
+export interface AnalyticsTopUser {
+  userId: string;
+  count: number;
+}
+
+export interface AnalyticsTopKeyword {
+  keyword: string;
+  count: number;
+}
+
+export interface ProjectAnalytics {
+  tweetsOverTime: AnalyticsTweetsOverTime[];
+  engagement: AnalyticsEngagement[];
+  languages: AnalyticsLanguage[];
+  topUsers: AnalyticsTopUser[];
+  topKeywords: AnalyticsTopKeyword[];
 }

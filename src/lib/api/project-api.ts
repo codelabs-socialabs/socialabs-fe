@@ -1,7 +1,10 @@
 import { apiClient } from '@/lib/api/api-client';
+import { tokenStorage } from '@/lib/auth/token-storage';
+import { env } from '@/config/env';
 import type {
   CreateProjectInput,
   Project,
+  ProjectAnalytics,
   UpdateProjectInput,
 } from '@/types/project';
 
@@ -21,6 +24,18 @@ interface DeleteProjectResponse {
   message: string;
   status: boolean;
   data?: null;
+}
+
+interface RecrawlResponse {
+  message: string;
+  status: boolean;
+  data: boolean;
+}
+
+interface AnalyticsResponse {
+  message: string;
+  status: boolean;
+  data: ProjectAnalytics;
 }
 
 export const projectApi = {
@@ -87,5 +102,36 @@ export const projectApi = {
         requireAuth: true,
       },
     );
+  },
+
+  recrawlProject: async (
+    workspaceId: string,
+    projectId: string,
+  ): Promise<RecrawlResponse> => {
+    return apiClient<RecrawlResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/recrawl`,
+      {
+        method: 'POST',
+        requireAuth: true,
+      },
+    );
+  },
+
+  getProjectAnalytics: async (
+    workspaceId: string,
+    projectId: string,
+  ): Promise<AnalyticsResponse> => {
+    return apiClient<AnalyticsResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/analytics`,
+      {
+        method: 'GET',
+        requireAuth: true,
+      },
+    );
+  },
+
+  getProgressStreamUrl: (workspaceId: string, projectId: string): string => {
+    const token = tokenStorage.getAccessToken();
+    return `${env.apiBaseUrl}/workspaces/${workspaceId}/projects/${projectId}/progress/stream?token=${token}`;
   },
 };
