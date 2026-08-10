@@ -12,6 +12,8 @@ import type {
   TweetListResult,
   UpdateProjectInput,
   WordFrequency,
+  SNACommunityResult,
+  InfluencerBuzzer,
 } from '@/types/project';
 
 interface ProjectListResponse {
@@ -84,6 +86,18 @@ interface EmotionResponse {
   message: string;
   status: boolean;
   data: EmotionResult;
+}
+
+interface SNACommunitiesResponse {
+  message: string;
+  status: boolean;
+  data: SNACommunityResult;
+}
+
+interface SNAInfluencersResponse {
+  message: string;
+  status: boolean;
+  data: InfluencerBuzzer[];
 }
 
 interface ProcessAnalysisResponse {
@@ -285,6 +299,36 @@ export const projectApi = {
   ): Promise<ProcessAnalysisResponse> => {
     return apiClient<ProcessAnalysisResponse>(
       `/workspaces/${workspaceId}/projects/${projectId}/emotions/process`,
+      { method: 'POST', requireAuth: true },
+    );
+  },
+
+  getProjectCommunities: async (
+    workspaceId: string,
+    projectId: string,
+  ): Promise<SNACommunitiesResponse> => {
+    return apiClient<SNACommunitiesResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/sna/communities`,
+      { method: 'GET', requireAuth: true },
+    );
+  },
+
+  getProjectInfluencers: async (
+    workspaceId: string,
+    projectId: string,
+  ): Promise<SNAInfluencersResponse> => {
+    return apiClient<SNAInfluencersResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/sna/influencers`,
+      { method: 'GET', requireAuth: true },
+    );
+  },
+
+  processSNA: async (
+    workspaceId: string,
+    projectId: string,
+  ): Promise<ProcessAnalysisResponse> => {
+    return apiClient<ProcessAnalysisResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/sna/process`,
       { method: 'POST', requireAuth: true },
     );
   },

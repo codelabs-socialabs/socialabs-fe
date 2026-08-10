@@ -249,3 +249,49 @@ export interface EmotionResult {
   emotionByTopicCnn: Record<string, EmotionPercentage>;
   emotionByTopicBilstm: Record<string, EmotionPercentage>;
 }
+
+export interface SNACommunityNode {
+  id: string;
+  name: string;
+  community: number;
+  val?: number;
+  color?: string;
+}
+
+export interface SNACommunityEdge {
+  source: string;
+  target: string;
+  weight?: number;
+  source_community?: number;
+  target_community?: number;
+}
+
+export interface SNACommunityResult {
+  totalCommunities: number;
+  totalNodes: number;
+  totalEdges: number;
+  nodes: SNACommunityNode[];
+  edges: SNACommunityEdge[];
+}
+
+export type InfluencerRole = 'Originator' | 'Amplifier' | 'Engager' | 'Bridge';
+
+export interface InfluencerBuzzer {
+  id: string;
+  username: string;
+  influenceScore: number;
+  role: InfluencerRole;
+  betweennessCentrality: number;
+  eigenvectorCentrality: number;
+  finalMeasure: number;
+  rank: number;
+  tweetUrl?: string;
+  followers?: number;
+  engagementRate?: number;
+  dominantTopic?: string;
+}
+
+export interface InfluencerResult {
+  total: number;
+  influencers: InfluencerBuzzer[];
+}
