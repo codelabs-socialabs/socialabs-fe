@@ -3,12 +3,15 @@ import { tokenStorage } from '@/lib/auth/token-storage';
 import { env } from '@/config/env';
 import type {
   CreateProjectInput,
+  EmotionResult,
   Project,
   ProjectAnalytics,
+  SentimentResult,
   Topic,
   TopicDocument,
   TweetListResult,
   UpdateProjectInput,
+  WordFrequency,
 } from '@/types/project';
 
 interface ProjectListResponse {
@@ -60,6 +63,30 @@ interface TopicDocumentsResponse {
 }
 
 interface ProcessTopicsResponse {
+  message: string;
+  status: boolean;
+  data: boolean;
+}
+
+interface SentimentResponse {
+  message: string;
+  status: boolean;
+  data: SentimentResult;
+}
+
+interface WordFrequencyResponse {
+  message: string;
+  status: boolean;
+  data: WordFrequency;
+}
+
+interface EmotionResponse {
+  message: string;
+  status: boolean;
+  data: EmotionResult;
+}
+
+interface ProcessAnalysisResponse {
   message: string;
   status: boolean;
   data: boolean;
@@ -209,6 +236,56 @@ export const projectApi = {
         method: 'POST',
         requireAuth: true,
       },
+    );
+  },
+
+  getProjectSentiments: async (
+    workspaceId: string,
+    projectId: string,
+  ): Promise<SentimentResponse> => {
+    return apiClient<SentimentResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/sentiments`,
+      { method: 'GET', requireAuth: true },
+    );
+  },
+
+  getWordFrequency: async (
+    workspaceId: string,
+    projectId: string,
+  ): Promise<WordFrequencyResponse> => {
+    return apiClient<WordFrequencyResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/sentiments/word-frequency`,
+      { method: 'GET', requireAuth: true },
+    );
+  },
+
+  processSentiments: async (
+    workspaceId: string,
+    projectId: string,
+  ): Promise<ProcessAnalysisResponse> => {
+    return apiClient<ProcessAnalysisResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/sentiments/process`,
+      { method: 'POST', requireAuth: true },
+    );
+  },
+
+  getProjectEmotions: async (
+    workspaceId: string,
+    projectId: string,
+  ): Promise<EmotionResponse> => {
+    return apiClient<EmotionResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/emotions`,
+      { method: 'GET', requireAuth: true },
+    );
+  },
+
+  processEmotions: async (
+    workspaceId: string,
+    projectId: string,
+  ): Promise<ProcessAnalysisResponse> => {
+    return apiClient<ProcessAnalysisResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/emotions/process`,
+      { method: 'POST', requireAuth: true },
     );
   },
 

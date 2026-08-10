@@ -180,3 +180,72 @@ export interface TopicDocument {
   topic: number;
   probability: number;
 }
+
+export interface SentimentPercentage {
+  positive: number;
+  negative: number;
+}
+
+export interface SentimentDocument {
+  id: string;
+  projectId: string;
+  rawText: string;
+  preprocessedText: string;
+  topic: number | null;
+  sentimentCnn: string;
+  sentimentCnnProbability: number;
+  sentimentCnnLstm: string;
+  sentimentCnnLstmProbability: number;
+}
+
+export interface SentimentResult {
+  total: number;
+  documents: SentimentDocument[];
+  sentimentPercentageCnn: SentimentPercentage;
+  sentimentPercentageCnnLstm: SentimentPercentage;
+  sentimentByTopicCnn: Record<string, SentimentPercentage & { total: number }>;
+  sentimentByTopicCnnLstm: Record<
+    string,
+    SentimentPercentage & { total: number }
+  >;
+}
+
+export interface WordFrequencyItem {
+  word: string;
+  count: number;
+}
+
+export interface WordFrequency {
+  positive: WordFrequencyItem[];
+  negative: WordFrequencyItem[];
+}
+
+export interface EmotionPercentage {
+  Anger: number;
+  Fear: number;
+  Joy: number;
+  Love: number;
+  Sad: number;
+  Neutral: number;
+}
+
+export interface EmotionDocument {
+  id: string;
+  projectId: string;
+  rawText: string;
+  preprocessedText: string;
+  topic: number | null;
+  emotionCnn: string;
+  emotionCnnProbability: Record<string, number>;
+  emotionBilstm: string;
+  emotionBilstmProbability: Record<string, number>;
+}
+
+export interface EmotionResult {
+  total: number;
+  documents: EmotionDocument[];
+  emotionPercentageCnn: EmotionPercentage;
+  emotionPercentageBilstm: EmotionPercentage;
+  emotionByTopicCnn: Record<string, EmotionPercentage>;
+  emotionByTopicBilstm: Record<string, EmotionPercentage>;
+}
