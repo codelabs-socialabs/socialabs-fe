@@ -1,6 +1,6 @@
 import { Download, LoaderCircle, Play, Share2 } from 'lucide-react';
 import { useState } from 'react';
-import { useParams } from 'react';
+import { useParams } from 'react-router';
 import { toast } from 'sonner';
 
 import SNACentralNode from '@/components/fragments/sna/sna-central-node';
