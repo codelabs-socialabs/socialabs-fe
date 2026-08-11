@@ -115,12 +115,18 @@ const SNANetworkGraph: React.FC<SNANetworkGraphProps> = ({ data }) => {
     const formattedNodes = data.nodes.map((node) => {
       const connCount = connectionCounts[node.id] || 0;
       const val = node.val ?? 5 + connCount * 2;
-      const color = node.color ?? getColorForCommunity(node.community);
+      const commId = node.community ?? 0;
+      const color = node.color ?? getColorForCommunity(commId);
+      const communityName =
+        node.community !== undefined && node.community !== null
+          ? `Community ${node.community}`
+          : 'General Cluster';
       return {
         ...node,
+        community: commId,
         val,
         color,
-        cluster: `Community ${node.community}`,
+        cluster: communityName,
       };
     });
 
@@ -134,10 +140,11 @@ const SNANetworkGraph: React.FC<SNANetworkGraphProps> = ({ data }) => {
   }, [data]);
 
   const uniqueCommunities = useMemo(() => {
-    const commSet = new Map<number, string>();
+    const commSet = new Map<number | string, string>();
     graphData.nodes.forEach((n: any) => {
-      if (n.community !== undefined && !commSet.has(n.community)) {
-        commSet.set(n.community, n.color);
+      const commId = n.community ?? 0;
+      if (!commSet.has(commId)) {
+        commSet.set(commId, n.color);
       }
     });
     return Array.from(commSet.entries()).slice(0, 6);

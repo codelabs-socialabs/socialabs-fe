@@ -95,7 +95,9 @@ const SNACentralNode: React.FC<SNACentralNodeProps> = ({ data }) => {
                   </td>
                   <td className="p-4 pr-8">
                     <span className="text-xs font-bold text-slate-600">
-                      Community {node.community}
+                      {node.community !== undefined && node.community !== null
+                        ? `Community ${node.community}`
+                        : 'General Cluster'}
                     </span>
                   </td>
                 </tr>
