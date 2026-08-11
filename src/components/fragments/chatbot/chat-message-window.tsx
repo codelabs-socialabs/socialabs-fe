@@ -66,7 +66,7 @@ const ChatMessageWindow: React.FC<Props> = ({ message, isTyping = false }) => {
           <div className="rounded-3xl rounded-tr-sm bg-slate-100 px-5 py-3.5 text-[15px] font-medium leading-relaxed text-slate-900">
             {displayedText}
           </div>
-        ) : !displayedText && isTyping ? (
+        ) : !message.content || (!displayedText && isTyping) ? (
           <div className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500 shadow-sm animate-pulse">
             <LoaderCircle size={15} className="animate-spin text-blue-600" />
             <span>Thinking and analyzing dataset...</span>
