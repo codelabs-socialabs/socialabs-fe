@@ -22,7 +22,7 @@ const ProjectChatbotPage = () => {
   const { workspaceId = '', projectId = '' } = useParams<ProjectRouteParams>();
 
   const project = useProjectStore((state) => {
-    const projects = state.projectsByWorkspaceId[workspaceId] ?? [];
+    const projects = state.projectsByWorkspace[workspaceId] ?? [];
     return projects.find((p) => p.id === projectId) ?? null;
   });
   const { topics } = useProjectTopics(workspaceId, projectId);
