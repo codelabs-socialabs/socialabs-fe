@@ -227,7 +227,7 @@ const SNAPage = () => {
 
             {/* Conversation samples */}
             <section>
-              <SNAConversation />
+              <SNAConversation data={communityResult} />
             </section>
           </>
         )}

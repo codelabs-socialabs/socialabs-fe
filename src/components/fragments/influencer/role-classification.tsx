@@ -1,7 +1,21 @@
 import React from 'react';
 import { Mic2, Repeat2, MessageCircle, Network } from 'lucide-react';
+import type { InfluencerBuzzer } from '@/types/project';
 
-const RoleClassification: React.FC = () => {
+interface RoleClassificationProps {
+  influencers?: InfluencerBuzzer[];
+}
+
+const RoleClassification: React.FC<RoleClassificationProps> = ({
+  influencers = [],
+}) => {
+  const counts = {
+    Originator: influencers.filter((i) => i.role === 'Originator').length,
+    Amplifier: influencers.filter((i) => i.role === 'Amplifier').length,
+    Engager: influencers.filter((i) => i.role === 'Engager').length,
+    Bridge: influencers.filter((i) => i.role === 'Bridge').length,
+  };
+
   const roles = [
     {
       id: 'originator',
@@ -11,7 +25,7 @@ const RoleClassification: React.FC = () => {
       color: 'text-rose-600',
       bg: 'bg-rose-50',
       border: 'border-rose-100',
-      count: 12,
+      count: counts.Originator,
     },
     {
       id: 'amplifier',
@@ -22,7 +36,7 @@ const RoleClassification: React.FC = () => {
       color: 'text-blue-600',
       bg: 'bg-blue-50',
       border: 'border-blue-100',
-      count: 84,
+      count: counts.Amplifier,
     },
     {
       id: 'engager',
@@ -32,7 +46,7 @@ const RoleClassification: React.FC = () => {
       color: 'text-amber-600',
       bg: 'bg-amber-50',
       border: 'border-amber-100',
-      count: 105,
+      count: counts.Engager,
     },
     {
       id: 'bridge',
@@ -42,7 +56,7 @@ const RoleClassification: React.FC = () => {
       color: 'text-purple-600',
       bg: 'bg-purple-50',
       border: 'border-purple-100',
-      count: 13,
+      count: counts.Bridge,
     },
   ];
 

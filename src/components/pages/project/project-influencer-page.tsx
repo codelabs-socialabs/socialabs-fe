@@ -179,7 +179,7 @@ const InfluencerPage = () => {
 
             {/* Role classification */}
             <section className="w-full">
-              <RoleClassification />
+              <RoleClassification influencers={mappedInfluencers} />
             </section>
 
             {/* Ranking table */}

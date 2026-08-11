@@ -264,6 +264,11 @@ export interface SNACommunityEdge {
   weight?: number;
   source_community?: number;
   target_community?: number;
+  sourceCommunity?: number;
+  targetCommunity?: number;
+  fullText?: string;
+  topic?: string;
+  tweetUrl?: string;
 }
 
 export interface SNACommunityResult {
