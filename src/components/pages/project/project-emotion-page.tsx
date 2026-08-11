@@ -261,11 +261,14 @@ const ProjectEmotionPage = () => {
                   </Pie>
                   <Tooltip
                     formatter={(
-                      value: number,
-                      _name: string,
-                      props: { payload?: { count?: number } },
+                      value: unknown,
+                      _name: unknown,
+                      props: unknown,
                     ) => [
-                      `${value.toFixed(1)}% (${(props.payload?.count ?? 0).toLocaleString('en-US')} posts)`,
+                      `${Number(value ?? 0).toFixed(1)}% (${(
+                        (props as { payload?: { count?: number } })?.payload
+                          ?.count ?? 0
+                      ).toLocaleString('en-US')} posts)`,
                       'Emotion',
                     ]}
                   />

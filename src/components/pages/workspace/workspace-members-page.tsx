@@ -13,7 +13,7 @@ import type {
   WorkspaceMemberStatus,
 } from '@/types/workspace-member';
 
-interface WorkspaceRouteParams {
+interface WorkspaceRouteParams extends Record<string, string | undefined> {
   workspaceId: string;
 }
 

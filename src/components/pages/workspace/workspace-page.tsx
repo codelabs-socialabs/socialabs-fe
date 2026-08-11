@@ -25,7 +25,7 @@ import {
 } from '@/types/workspace';
 import type { WorkspaceActivityType } from '@/types/workspace-activity';
 
-interface WorkspaceRouteParams {
+interface WorkspaceRouteParams extends Record<string, string | undefined> {
   workspaceId: string;
 }
 
@@ -459,7 +459,8 @@ const WorkspaceOverviewPage = () => {
             ) : (
               <div className="divide-y divide-slate-100 border-t border-slate-100">
                 {recentProjects.map((project) => {
-                  const status = projectStatusAppearance[project.status];
+                  const status =
+                    projectStatusAppearance[project.status ?? 'CREATED'];
 
                   return (
                     <Link
@@ -536,7 +537,8 @@ const WorkspaceOverviewPage = () => {
             ) : (
               <div className="divide-y divide-slate-100 border-t border-slate-100">
                 {processingProjects.map((project) => {
-                  const status = projectStatusAppearance[project.status];
+                  const status =
+                    projectStatusAppearance[project.status ?? 'CREATED'];
 
                   const progress = project.status === 'CRAWLING' ? 62 : 84;
 

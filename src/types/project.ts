@@ -1,14 +1,18 @@
-export enum ProjectLanguage {
-  ID = 'ID',
-  EN = 'EN',
-}
+export const ProjectLanguage = {
+  ID: 'ID',
+  EN: 'EN',
+} as const;
+export type ProjectLanguage =
+  (typeof ProjectLanguage)[keyof typeof ProjectLanguage];
 
-export enum ProjectCategory {
-  MARKETING = 'MARKETING',
-  EDUCATION = 'EDUCATION',
-  HEALTH = 'HEALTH',
-  OTHER = 'OTHER',
-}
+export const ProjectCategory = {
+  MARKETING: 'MARKETING',
+  EDUCATION: 'EDUCATION',
+  HEALTH: 'HEALTH',
+  OTHER: 'OTHER',
+} as const;
+export type ProjectCategory =
+  (typeof ProjectCategory)[keyof typeof ProjectCategory];
 
 export type ProjectStatus =
   | 'CREATED'
@@ -51,22 +55,22 @@ export interface Project {
    */
   processing: ProjectProcessing;
 
-  totalTweets: number;
-  crawledTweets: number;
-  topicCounte: number;
+  totalTweets?: number;
+  crawledTweets?: number;
+  topicCounte?: number;
 
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 
   /*
    * Compatibility fields untuk UI lama.
    * Untuk sementara dihasilkan oleh normalizeProject.
    */
-  status: ProjectStatus;
-  isArchived: boolean;
-  dataLimit: number;
-  tweetsRetrieved: number;
-  topicsCount: number;
+  status?: ProjectStatus;
+  isArchived?: boolean;
+  dataLimit?: number;
+  tweetsRetrieved?: number;
+  topicsCount?: number;
 }
 
 export interface CreateProjectInput {

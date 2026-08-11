@@ -20,7 +20,7 @@ import { useProjectProgress } from '@/hooks/use-project-progress';
 import { useProjectStore } from '@/stores/project-store';
 import type { ProjectStatus } from '@/types/project';
 
-interface ProjectRouteParams {
+interface ProjectRouteParams extends Record<string, string | undefined> {
   workspaceId: string;
   projectId: string;
 }
@@ -358,7 +358,7 @@ const ProjectProcessingPage = () => {
                   <span>
                     Tweets collected:{' '}
                     <strong className="font-semibold text-slate-700">
-                      {formatNumber(project.crawledTweets)}
+                      {formatNumber(project.crawledTweets ?? 0)}
                     </strong>
                   </span>
                 </div>
@@ -415,11 +415,11 @@ const ProjectProcessingPage = () => {
             </p>
 
             <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
-              {formatNumber(project.crawledTweets)}
+              {formatNumber(project.crawledTweets ?? 0)}
             </p>
 
             <p className="mt-1 text-xs text-slate-500">
-              of {formatNumber(project.totalTweets || project.dataLimit)}{' '}
+              of {formatNumber(project.totalTweets || project.dataLimit || 0)}{' '}
               targeted posts
             </p>
           </div>

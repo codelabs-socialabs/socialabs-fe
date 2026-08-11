@@ -3,7 +3,7 @@ import { Navigate, useParams } from 'react-router';
 
 import { useProjectStore } from '@/stores/project-store';
 
-interface ProjectRouteParams {
+interface ProjectRouteParams extends Record<string, string | undefined> {
   workspaceId: string;
   projectId: string;
 }

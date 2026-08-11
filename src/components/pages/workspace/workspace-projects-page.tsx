@@ -16,7 +16,7 @@ type WorkspaceItem = ReturnType<
   typeof useWorkspaceStore.getState
 >['workspaces'][number];
 
-interface WorkspaceRouteParams {
+interface WorkspaceRouteParams extends Record<string, string | undefined> {
   workspaceId: string;
 }
 

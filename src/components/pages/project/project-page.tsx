@@ -127,7 +127,7 @@ const ProjectPage = () => {
               </span>
             </div>
             <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-              {formatNumber(project.totalTweets)}
+              {formatNumber(project.totalTweets ?? 0)}
             </p>
           </div>
 

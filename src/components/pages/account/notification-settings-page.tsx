@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { ShieldCheck } from 'lucide-react';
 import { type Dispatch, type SetStateAction, useState } from 'react';
 
@@ -70,39 +69,11 @@ const NotificationSettingsPage = () => {
 
   const [newsletter, setNewsletter] = useState(false);
 
-  const [hasChanges, setHasChanges] = useState(false);
-
-  const [isSaving, setIsSaving] = useState(false);
-
-  const [savedSuccessfully, setSavedSuccessfully] = useState(false);
-
   const updateSetting = (
     setter: Dispatch<SetStateAction<boolean>>,
     value: boolean,
   ): void => {
     setter(value);
-    setHasChanges(true);
-    setSavedSuccessfully(false);
-  };
-
-  const handleSave = async (): Promise<void> => {
-    if (!hasChanges || isSaving) {
-      return;
-    }
-
-    setIsSaving(true);
-    setSavedSuccessfully(false);
-
-    try {
-      await new Promise<void>((resolve) => {
-        window.setTimeout(resolve, 500);
-      });
-
-      setHasChanges(false);
-      setSavedSuccessfully(true);
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   return (

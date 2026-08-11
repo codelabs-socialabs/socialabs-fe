@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { LoaderCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Outlet, useParams } from 'react-router';
@@ -7,7 +6,7 @@ import WorkspaceNavbar from '@/components/fragments/navbar';
 import WorkspaceSidebar from '@/components/fragments/workspace/workspace-sidebar';
 import { useWorkspaceStore } from '@/stores/workspace-store';
 
-interface WorkspaceRouteParams {
+interface WorkspaceRouteParams extends Record<string, string | undefined> {
   workspaceId: string;
 }
 
@@ -32,8 +31,6 @@ const WorkspaceLayout = () => {
   const isLoading = useWorkspaceStore((state) => state.isLoading);
 
   const isInitialized = useWorkspaceStore((state) => state.isInitialized);
-
-  const error = useWorkspaceStore((state) => state.error);
 
   const fetchWorkspaces = useWorkspaceStore((state) => state.fetchWorkspaces);
 

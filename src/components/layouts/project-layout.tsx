@@ -8,7 +8,7 @@ import { useProjectStore } from '@/stores/project-store';
 import { useWorkspaceStore } from '@/stores/workspace-store';
 import type { Project } from '@/types/project';
 
-interface ProjectRouteParams {
+interface ProjectRouteParams extends Record<string, string | undefined> {
   workspaceId: string;
   projectId: string;
 }

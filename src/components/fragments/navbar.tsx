@@ -6,7 +6,7 @@ import { tokenStorage } from '@/lib/auth/token-storage';
 import { useAuthStore } from '@/stores/auth-store';
 import { useWorkspaceStore } from '@/stores/workspace-store';
 
-interface WorkspaceRouteParams {
+interface WorkspaceRouteParams extends Record<string, string | undefined> {
   workspaceId?: string;
   projectId?: string;
 }
@@ -24,6 +24,8 @@ interface ProjectContext {
 interface WorkspaceNavbarProps {
   workspace?: WorkspaceContext | null;
   project?: ProjectContext | null;
+  context?: string;
+  mobile?: boolean;
 }
 
 interface NavbarBreadcrumb {

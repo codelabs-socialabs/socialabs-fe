@@ -605,7 +605,12 @@ const ProjectSettingsPage = () => {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <button
                       type="button"
-                      onClick={() => updateSetting(setVisibility, 'private')}
+                      onClick={() =>
+                        updateSetting<ProjectVisibility>(
+                          setVisibility,
+                          'private',
+                        )
+                      }
                       className={`flex items-start gap-3 rounded-xl border p-4 text-left transition ${
                         visibility === 'private'
                           ? 'border-red-300 bg-red-50/60 ring-1 ring-red-200'
@@ -635,7 +640,12 @@ const ProjectSettingsPage = () => {
 
                     <button
                       type="button"
-                      onClick={() => updateSetting(setVisibility, 'workspace')}
+                      onClick={() =>
+                        updateSetting<ProjectVisibility>(
+                          setVisibility,
+                          'workspace',
+                        )
+                      }
                       className={`flex items-start gap-3 rounded-xl border p-4 text-left transition ${
                         visibility === 'workspace'
                           ? 'border-red-300 bg-red-50/60 ring-1 ring-red-200'
@@ -1027,7 +1037,10 @@ const ProjectSettingsPage = () => {
                     <button
                       type="button"
                       onClick={() =>
-                        updateSetting(setAnalysisMode, 'recommended')
+                        updateSetting<AnalysisMode>(
+                          setAnalysisMode,
+                          'recommended',
+                        )
                       }
                       className={`shrink-0 rounded-md px-4 py-2 text-sm font-medium transition ${
                         analysisMode === 'recommended'
@@ -1040,7 +1053,9 @@ const ProjectSettingsPage = () => {
 
                     <button
                       type="button"
-                      onClick={() => updateSetting(setAnalysisMode, 'advanced')}
+                      onClick={() =>
+                        updateSetting<AnalysisMode>(setAnalysisMode, 'advanced')
+                      }
                       className={`shrink-0 rounded-md px-4 py-2 text-sm font-medium transition ${
                         analysisMode === 'advanced'
                           ? 'bg-white text-red-600 shadow-sm'

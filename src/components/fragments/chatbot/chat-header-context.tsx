@@ -24,14 +24,12 @@ const formatDateRange = (start?: string, end?: string): string => {
 
 const ChatHeaderContext: React.FC<ChatHeaderContextProps> = ({ project }) => {
   const projectName = project?.name ?? 'Current Project';
-  const totalTweets =
-    project?.crawledTweets || project?.totalTweets || project?.tweetsRetrieved
-      ? (
-          project.crawledTweets ||
-          project.totalTweets ||
-          project.tweetsRetrieved
-        ).toLocaleString('en-US')
-      : '0';
+  const tweetCount =
+    project?.crawledTweets ??
+    project?.totalTweets ??
+    project?.tweetsRetrieved ??
+    0;
+  const totalTweets = tweetCount ? tweetCount.toLocaleString('en-US') : '0';
   const dateRange = formatDateRange(project?.startDate, project?.endDate);
 
   return (

@@ -155,15 +155,15 @@ const normalizeProject = (project: Project, workspaceId: string): Project => {
     project.processing?.status ?? project.status ?? 'CREATED';
 
   const totalTweets = Number.isFinite(project.totalTweets)
-    ? Math.max(project.totalTweets, 0)
+    ? Math.max(project.totalTweets ?? 0, 0)
     : 0;
 
   const crawledTweets = Number.isFinite(project.crawledTweets)
-    ? Math.max(project.crawledTweets, 0)
+    ? Math.max(project.crawledTweets ?? 0, 0)
     : 0;
 
   const topicCount = Number.isFinite(project.topicCounte)
-    ? Math.max(project.topicCounte, 0)
+    ? Math.max(project.topicCounte ?? 0, 0)
     : 0;
 
   return {

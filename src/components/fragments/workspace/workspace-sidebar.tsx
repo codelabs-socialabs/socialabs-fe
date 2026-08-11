@@ -8,7 +8,7 @@ import { WorkspaceRole } from '@/types/workspace';
 import WorkspaceQuota from './workspace-qouta';
 import WorkspaceSwitcher from './workspace-switcher';
 
-interface WorkspaceRouteParams {
+interface WorkspaceRouteParams extends Record<string, string | undefined> {
   workspaceId: string;
 }
 
