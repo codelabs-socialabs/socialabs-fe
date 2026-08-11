@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { useParams } from 'react';
+import { useParams } from 'react-router';
 
 import ChatHeaderContext from '@/components/fragments/chatbot/chat-header-context';
 import ChatInputBar from '@/components/fragments/chatbot/chat-input-bar';
