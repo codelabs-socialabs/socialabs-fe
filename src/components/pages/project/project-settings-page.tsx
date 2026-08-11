@@ -21,9 +21,15 @@ import {
   type Dispatch,
   type ReactNode,
   type SetStateAction,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { toast } from 'sonner';
+
+import { useProjectStore } from '@/stores/project-store';
+import { ProjectCategory, ProjectLanguage } from '@/types/project';
 
 type SettingsTab =
   | 'general'
@@ -225,35 +231,44 @@ const ToggleField = ({
 };
 
 const ProjectSettingsPage = () => {
+  const { workspaceId = '', projectId = '' } = useParams<{
+    workspaceId: string;
+    projectId: string;
+  }>();
+  const navigate = useNavigate();
+
+  const project = useProjectStore((state) => {
+    const projects = state.projectsByWorkspace[workspaceId] ?? [];
+    return projects.find((p) => p.id === projectId) ?? null;
+  });
+  const updateProject = useProjectStore((state) => state.updateProject);
+  const deleteProject = useProjectStore((state) => state.deleteProject);
+
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
-  const [projectName, setProjectName] = useState('MBG Jatinangor Evaluation');
-
-  const [description, setDescription] = useState(
-    'Monitoring public reaction, complaints, and sentiment regarding the implementation of the Makan Bergizi Gratis program in Jatinangor.',
-  );
-
-  const [category, setCategory] = useState('Public Policy');
-
-  const [language, setLanguage] = useState('id');
-
+  const [projectName, setProjectName] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState<string>(ProjectCategory.OTHER);
+  const [language, setLanguage] = useState<string>('id');
   const [visibility, setVisibility] = useState<ProjectVisibility>('workspace');
-
-  const [query, setQuery] = useState('mbg jatinangor viral');
-
-  const [includedKeywords, setIncludedKeywords] = useState(
-    'mbg, makan bergizi gratis, jatinangor',
-  );
-
-  const [excludedKeywords, setExcludedKeywords] = useState(
-    'giveaway, promo, iklan',
-  );
-
-  const [startDate, setStartDate] = useState('2026-02-01');
-
-  const [endDate, setEndDate] = useState('2026-02-15');
-
+  const [query, setQuery] = useState('');
+  const [includedKeywords, setIncludedKeywords] = useState('');
+  const [excludedKeywords, setExcludedKeywords] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [dataLimit, setDataLimit] = useState('50000');
+
+  useEffect(() => {
+    if (project) {
+      setProjectName(project.name ?? '');
+      setDescription(project.description ?? '');
+      setCategory(project.category ?? ProjectCategory.OTHER);
+      setLanguage(project.language ? project.language.toLowerCase() : 'id');
+      setQuery(project.keyword ?? '');
+      setStartDate(project.startDate ? project.startDate.split('T')[0] : '');
+      setEndDate(project.endDate ? project.endDate.split('T')[0] : '');
+    }
+  }, [project]);
 
   const [includeReposts, setIncludeReposts] = useState(true);
 
@@ -324,7 +339,7 @@ const ProjectSettingsPage = () => {
   };
 
   const handleSave = async (): Promise<void> => {
-    if (!hasChanges || isSaving) {
+    if (!hasChanges || isSaving || !workspaceId || !projectId) {
       return;
     }
 
@@ -332,13 +347,21 @@ const ProjectSettingsPage = () => {
     setSavedSuccessfully(false);
 
     try {
-      await new Promise<void>((resolve) => {
-        window.setTimeout(resolve, 600);
+      await updateProject(workspaceId, projectId, {
+        name: projectName,
+        description,
+        category: category as ProjectCategory,
+        keyword: query,
+        startDate,
+        endDate,
+        language: (language ? language.toUpperCase() : 'ID') as ProjectLanguage,
       });
 
       setHasChanges(false);
       setSavedSuccessfully(true);
+      toast.success('Project settings updated successfully.');
     } catch (error) {
+      toast.error('Failed to save project settings.');
       console.error('Failed to save project settings:', error);
     } finally {
       setIsSaving(false);
@@ -347,7 +370,8 @@ const ProjectSettingsPage = () => {
 
   const handleCopyProjectId = async (): Promise<void> => {
     try {
-      await navigator.clipboard.writeText('prj_mbg_jatinangor_001');
+      await navigator.clipboard.writeText(projectId || project?.id || '');
+      toast.success('Project ID copied to clipboard.');
     } catch {
       console.warn('Clipboard is unavailable in this environment.');
     }
@@ -379,15 +403,24 @@ const ProjectSettingsPage = () => {
     markAsChanged();
   };
 
-  const handleDeleteProject = (): void => {
-    if (deleteConfirmation.trim() !== projectName.trim()) {
+  const handleDeleteProject = async (): Promise<void> => {
+    if (
+      deleteConfirmation.trim() !== projectName.trim() ||
+      !workspaceId ||
+      !projectId
+    ) {
       return;
     }
 
-    console.log('Delete project');
-
-    setIsDeleteModalOpen(false);
-    setDeleteConfirmation('');
+    try {
+      await deleteProject(workspaceId, projectId);
+      toast.success('Project deleted successfully.');
+      setIsDeleteModalOpen(false);
+      setDeleteConfirmation('');
+      navigate(`/workspaces/${workspaceId}`);
+    } catch {
+      toast.error('Failed to delete project.');
+    }
   };
 
   const closeDeleteModal = (): void => {
@@ -644,7 +677,7 @@ const ProjectSettingsPage = () => {
                         </p>
 
                         <p className="mt-1 font-mono text-xs text-slate-500">
-                          prj_mbg_jatinangor_001
+                          {projectId || project?.id}
                         </p>
                       </div>
 
