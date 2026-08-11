@@ -3,6 +3,7 @@ import {
   BrainCircuit,
   Calendar,
   Database,
+  Globe,
   Search,
   Users,
 } from 'lucide-react';
