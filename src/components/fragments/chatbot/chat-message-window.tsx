@@ -1,17 +1,14 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { AlertTriangle, Check, Copy, Link } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { Copy, Check, Link } from 'lucide-react';
 
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  sources?: string[];
-}
+import type { ChatMessageItem } from '@/types/chatbot';
+
+export type ChatMessage = ChatMessageItem;
 
 interface Props {
-  message: ChatMessage;
+  message: ChatMessageItem;
   isTyping?: boolean;
 }
 
@@ -54,35 +51,62 @@ const ChatMessageWindow: React.FC<Props> = ({ message, isTyping = false }) => {
   };
 
   const isUser = message.role === 'user';
+  const hasFallacy = Boolean(message.fallacy?.fallacyType);
 
   return (
     <div
-      className={`flex w-full mb-8 animate-in fade-in slide-in-from-bottom-2 duration-300 ${isUser ? 'justify-end' : 'justify-start'}`}
+      className={`mb-8 flex w-full animate-in fade-in slide-in-from-bottom-2 duration-300 ${isUser ? 'justify-end' : 'justify-start'}`}
     >
       {/* Bubble Container */}
       <div
-        className={`flex flex-col gap-1.5 max-w-[85%] ${isUser ? 'items-end' : 'items-start'}`}
+        className={`flex max-w-[85%] flex-col gap-1.5 ${isUser ? 'items-end' : 'items-start'}`}
       >
         {/* Message Content */}
         {isUser ? (
-          <div className="px-5 py-3.5 bg-slate-100 text-slate-900 rounded-3xl rounded-tr-sm text-[15px] font-medium leading-relaxed">
+          <div className="rounded-3xl rounded-tr-sm bg-slate-100 px-5 py-3.5 text-[15px] font-medium leading-relaxed text-slate-900">
             {displayedText}
           </div>
         ) : (
-          <div className="prose prose-slate prose-sm md:prose-base max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-900 prose-a:text-blue-600 prose-strong:text-slate-900 text-slate-800">
+          <div className="prose prose-slate prose-sm md:prose-base max-w-none text-slate-800 prose-headings:font-bold prose-headings:text-slate-900 prose-p:leading-relaxed prose-a:text-blue-600 prose-strong:text-slate-900">
             <ReactMarkdown>
               {displayedText + (isAnimating ? ' ▊' : '')}
             </ReactMarkdown>
           </div>
         )}
 
+        {/* Fallacy Warning Box */}
+        {!isUser && message.fallacy && hasFallacy && (
+          <div className="mt-3 flex w-full flex-col gap-1 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-900">
+            <div className="flex items-center gap-1.5 font-semibold text-amber-800">
+              <AlertTriangle size={14} className="text-amber-600" />
+              <span>
+                Logical Fallacy Detected: {message.fallacy.fallacyType}
+              </span>
+              <span className="ml-auto rounded bg-amber-200/60 px-1.5 py-0.5 text-[10px]">
+                {Math.round(message.fallacy.confidence * 100)}% confidence
+              </span>
+            </div>
+            {message.fallacy.explanation && (
+              <p className="mt-1 leading-relaxed text-amber-800/90">
+                {message.fallacy.explanation}
+              </p>
+            )}
+            {message.fallacy.suggestedModification && (
+              <div className="mt-1 font-medium text-amber-900">
+                <span className="font-semibold">Suggestion:</span>{' '}
+                {message.fallacy.suggestedModification}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Footer Metadata (Assistant Only) */}
         {!isUser && !isAnimating && (
-          <div className="flex items-center gap-4 mt-2">
+          <div className="mt-2 flex items-center gap-4">
             {/* Copy Button */}
             <button
               onClick={handleCopy}
-              className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              className="flex size-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
               title="Copy response"
             >
               {copied ? (
@@ -97,13 +121,13 @@ const ChatMessageWindow: React.FC<Props> = ({ message, isTyping = false }) => {
               <div className="flex items-center gap-2">
                 <span className="text-slate-300">•</span>
                 <Link size={12} className="text-slate-400" />
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {message.sources.map((source, idx) => (
                     <span
                       key={idx}
-                      className="text-[11px] font-medium text-slate-500 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200/60 hover:bg-slate-100 transition-colors cursor-pointer"
+                      className="rounded-full border border-slate-200/60 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500 transition-colors hover:bg-slate-100"
                     >
-                      {source}
+                      {source.title}
                     </span>
                   ))}
                 </div>

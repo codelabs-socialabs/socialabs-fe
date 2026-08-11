@@ -1,68 +1,41 @@
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { useParams } from 'react';
 
 import ChatHeaderContext from '@/components/fragments/chatbot/chat-header-context';
 import ChatInputBar from '@/components/fragments/chatbot/chat-input-bar';
 import ChatMessageWindow from '@/components/fragments/chatbot/chat-message-window';
-import type { ChatMessage } from '@/components/fragments/chatbot/chat-message-window';
 import SidebarChatbot from '@/components/fragments/chatbot/sidebar-chatbot';
 import SmartSuggestionGrid from '@/components/fragments/chatbot/smart-suggestion-grid';
+import { useProjectChatbot } from '@/hooks/use-project-chatbot';
+import type { ChatProcessingType } from '@/types/chatbot';
 
-const MOCK_AI_RESPONSES: Record<string, Omit<ChatMessage, 'id' | 'role'>> = {
-  'Apa insight utama dari data ini?': {
-    content: `### Executive Summary
-Percakapan didominasi oleh keluhan terkait **kenaikan harga** dan **lambannya respons kebijakan publik**.
-
-### Key Data Points
-- Topik "Harga Produk" menyumbang **28%** dari total percakapan.
-- **Sentimen negatif mencapai 62%**, meningkat 15% dari bulan sebelumnya.
-- **Puncak interaksi** terjadi pada 12 Februari setelah pengumuman APBN.
-
-### Recommendation
-Fokuskan mitigasi komunikasi pada klaster audiens menengah ke bawah yang paling aktif merespons isu harga sembako.`,
-    sources: ['Topic Modeling', 'Sentiment Trend', 'Community Clustering'],
-  },
-
-  'Siapa influencer utama dalam diskusi ini?': {
-    content: `### Top Structural Influencers
-Berdasarkan perhitungan _Betweenness Centrality_, influencer paling berdampak bukan akun dengan pengikut terbanyak, melainkan **@AktivisLokal**.
-
-### Why Important?
-- **Role:** Bridge
-- **Impact:** Menghubungkan diskusi antara "*Klaster Mahasiswa*" dan "*Klaster Pekerja Publik*".
-- **Engagement Level:** 12.5%
-
-Akun dengan pengikut terbesar, **@BeritaUpdate**, hanya memiliki peran _Amplifier_ dengan degree centrality menengah.`,
-    sources: ['Influencer Analysis', 'Network Density'],
-  },
-
-  'Topik apa yang meningkat pada minggu kedua Februari?': {
-    content: `Pada minggu kedua Februari, 8–14 Februari, terdapat lonjakan anomali pada topik **"Kualitas Infrastruktur Jalan"** sebesar **+412%**.
-
-Lonjakan ini dipicu oleh unggahan viral dari klaster *Regional Sumatera* yang mendapatkan amplifikasi organik secara masif.`,
-    sources: ['Topic Modeling', 'Timeline Trends'],
-  },
-
-  DEFAULT: {
-    content: `### Analisis Diproses
-Saya telah memindai dataset sebanyak **35.420 dokumen**. Namun, pertanyaan tersebut terlalu spesifik atau berada di luar cakupan data yang saat ini terindeks.
-
-Silakan sesuaikan pertanyaan atau gunakan salah satu **Smart Suggestions** yang tersedia.`,
-  },
-};
+interface ProjectRouteParams {
+  workspaceId: string;
+  projectId: string;
+  [key: string]: string | undefined;
+}
 
 const ProjectChatbotPage = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { workspaceId = '', projectId = '' } = useParams<ProjectRouteParams>();
 
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const {
+    messages,
+    isLoading,
+    isStreaming,
+    processingType,
+    setProcessingType,
+    conversations,
+    activeConversationId,
+    selectConversation,
+    createNewChat,
+    deleteConversation,
+    sendMessage,
+  } = useProjectChatbot({ workspaceId, projectId });
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const pendingResponseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
 
   const scrollToBottom = (): void => {
     messagesEndRef.current?.scrollIntoView({
@@ -73,48 +46,13 @@ const ProjectChatbotPage = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading]);
+  }, [messages, isStreaming, isLoading]);
 
-  useEffect(() => {
-    return () => {
-      if (pendingResponseTimerRef.current) {
-        clearTimeout(pendingResponseTimerRef.current);
-      }
-    };
-  }, []);
-
-  const handleSendMessage = (text: string): void => {
-    const normalizedText = text.trim();
-
-    if (!normalizedText || isLoading) {
-      return;
+  const handleSendMessage = (text: string, mode?: ChatProcessingType): void => {
+    if (mode && mode !== processingType) {
+      setProcessingType(mode);
     }
-
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: normalizedText,
-    };
-
-    setMessages((currentMessages) => [...currentMessages, userMessage]);
-
-    setIsLoading(true);
-
-    pendingResponseTimerRef.current = setTimeout(() => {
-      const responseTemplate =
-        MOCK_AI_RESPONSES[normalizedText] ?? MOCK_AI_RESPONSES.DEFAULT;
-
-      const assistantMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        ...responseTemplate,
-      };
-
-      setMessages((currentMessages) => [...currentMessages, assistantMessage]);
-
-      setIsLoading(false);
-      pendingResponseTimerRef.current = null;
-    }, 1500);
+    sendMessage(text);
   };
 
   return (
@@ -130,7 +68,14 @@ const ProjectChatbotPage = () => {
             isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
-          <SidebarChatbot isOpen={isSidebarOpen} />
+          <SidebarChatbot
+            isOpen={isSidebarOpen}
+            conversations={conversations}
+            activeConversationId={activeConversationId}
+            onSelectConversation={selectConversation}
+            onNewChat={createNewChat}
+            onDeleteConversation={deleteConversation}
+          />
         </div>
       </div>
 
@@ -198,7 +143,7 @@ const ProjectChatbotPage = () => {
                     <ChatMessageWindow
                       key={message.id}
                       message={message}
-                      isTyping={isLastAssistantMessage}
+                      isTyping={isLastAssistantMessage && isStreaming}
                     />
                   );
                 })}
@@ -232,7 +177,9 @@ const ProjectChatbotPage = () => {
           <div className="pointer-events-auto mx-auto w-full max-w-3xl px-6 sm:px-8">
             <ChatInputBar
               onSendMessage={handleSendMessage}
-              isLoading={isLoading}
+              isLoading={isLoading || isStreaming}
+              mode={processingType}
+              onModeChange={setProcessingType}
             />
           </div>
         </div>
