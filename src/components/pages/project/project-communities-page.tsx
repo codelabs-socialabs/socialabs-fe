@@ -1,5 +1,5 @@
 import { Download, LoaderCircle, Play, Share2 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 import { toast } from 'sonner';
 
@@ -47,22 +47,58 @@ const SNAPage = () => {
     }
   };
 
-  const snapshotMetrics = {
-    totalNodes: communityResult?.totalNodes ?? 0,
-    totalConnections: communityResult?.totalEdges ?? 0,
-    networkDensity: communityResult?.totalNodes
-      ? Number(
-          (
-            (2 * (communityResult.totalEdges ?? 0)) /
-            (communityResult.totalNodes * (communityResult.totalNodes - 1) || 1)
-          ).toFixed(3),
-        )
-      : 0,
-    largestCommunity: communityResult?.totalCommunities
-      ? `${communityResult.totalCommunities} Communities`
-      : 'N/A',
-    centralNode: communityResult?.nodes?.[0]?.name ?? 'N/A',
-  };
+  const snapshotMetrics = useMemo(() => {
+    if (
+      !communityResult ||
+      !communityResult.nodes ||
+      communityResult.nodes.length === 0
+    ) {
+      return {
+        totalNodes: 0,
+        totalConnections: 0,
+        networkDensity: 0,
+        largestCommunity: 'N/A',
+        centralNode: 'N/A',
+      };
+    }
+
+    const totalNodes = communityResult.nodes.length;
+    const totalConnections = communityResult.edges?.length ?? 0;
+    const maxPossibleEdges = (totalNodes * (totalNodes - 1)) / 2 || 1;
+    const networkDensity = Number(
+      (totalConnections / maxPossibleEdges).toFixed(3),
+    );
+
+    const communityCounts: Record<number, number> = {};
+    for (const node of communityResult.nodes) {
+      communityCounts[node.community] =
+        (communityCounts[node.community] ?? 0) + 1;
+    }
+    const sortedCommunities = Object.entries(communityCounts).sort(
+      (a, b) => b[1] - a[1],
+    );
+    const topComm = sortedCommunities[0];
+    const largestCommunity = topComm
+      ? `Community ${topComm[0]} (${Math.round((topComm[1] / totalNodes) * 100)}%)`
+      : 'N/A';
+
+    const degrees: Record<string, number> = {};
+    for (const edge of communityResult.edges ?? []) {
+      degrees[edge.source] = (degrees[edge.source] ?? 0) + 1;
+      degrees[edge.target] = (degrees[edge.target] ?? 0) + 1;
+    }
+    const topNode = [...communityResult.nodes].sort(
+      (a, b) => (degrees[b.id] ?? 0) - (degrees[a.id] ?? 0),
+    )[0];
+
+    return {
+      totalNodes,
+      totalConnections,
+      networkDensity,
+      largestCommunity,
+      centralNode: topNode ? `@${topNode.name || topNode.id}` : 'N/A',
+    };
+  }, [communityResult]);
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-6 py-8 lg:px-8">
@@ -180,13 +216,13 @@ const SNAPage = () => {
               </div>
 
               <div className="min-w-0 xl:col-span-1">
-                <SNACommunitySummary />
+                <SNACommunitySummary data={communityResult} />
               </div>
             </section>
 
             {/* Central nodes */}
             <section>
-              <SNACentralNode />
+              <SNACentralNode data={communityResult} />
             </section>
 
             {/* Conversation samples */}
