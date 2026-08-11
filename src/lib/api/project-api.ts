@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/api/api-client';
 import { tokenStorage } from '@/lib/auth/token-storage';
 import { env } from '@/config/env';
+import type { ChatMessageItem, ConversationSession } from '@/types/chatbot';
 import type {
   CreateProjectInput,
   EmotionResult,
@@ -101,6 +102,31 @@ interface SNAInfluencersResponse {
 }
 
 interface ProcessAnalysisResponse {
+  message: string;
+  status: boolean;
+  data: boolean;
+}
+
+interface ConversationListResponse {
+  message: string;
+  status: boolean;
+  data: ConversationSession[];
+}
+
+interface ConversationDetailResponse {
+  message: string;
+  status: boolean;
+  data: {
+    id: string;
+    projectId: string;
+    title: string;
+    messages: ChatMessageItem[];
+    createdAt: string;
+    updatedAt: string;
+  };
+}
+
+interface DeleteConversationResponse {
   message: string;
   status: boolean;
   data: boolean;
@@ -336,5 +362,42 @@ export const projectApi = {
   getProgressStreamUrl: (workspaceId: string, projectId: string): string => {
     const token = tokenStorage.getAccessToken();
     return `${env.apiBaseUrl}/workspaces/${workspaceId}/projects/${projectId}/progress/stream?token=${token}`;
+  },
+
+  getConversations: async (
+    workspaceId: string,
+    projectId: string,
+  ): Promise<ConversationListResponse> => {
+    return apiClient<ConversationListResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/chatbot/conversations`,
+      { method: 'GET', requireAuth: true },
+    );
+  },
+
+  getConversation: async (
+    workspaceId: string,
+    projectId: string,
+    conversationId: string,
+  ): Promise<ConversationDetailResponse> => {
+    return apiClient<ConversationDetailResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/chatbot/conversations/${conversationId}`,
+      { method: 'GET', requireAuth: true },
+    );
+  },
+
+  deleteConversation: async (
+    workspaceId: string,
+    projectId: string,
+    conversationId: string,
+  ): Promise<DeleteConversationResponse> => {
+    return apiClient<DeleteConversationResponse>(
+      `/workspaces/${workspaceId}/projects/${projectId}/chatbot/conversations/${conversationId}`,
+      { method: 'DELETE', requireAuth: true },
+    );
+  },
+
+  getChatStreamUrl: (workspaceId: string, projectId: string): string => {
+    const token = tokenStorage.getAccessToken();
+    return `${env.apiBaseUrl}/workspaces/${workspaceId}/projects/${projectId}/chatbot/chat/stream?token=${token}`;
   },
 };
