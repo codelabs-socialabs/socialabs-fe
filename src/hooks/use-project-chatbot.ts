@@ -216,6 +216,7 @@ export function useProjectChatbot({
         );
       } finally {
         setIsStreaming(false);
+        void fetchConversations();
       }
     },
     [

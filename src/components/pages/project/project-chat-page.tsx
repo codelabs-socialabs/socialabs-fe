@@ -120,7 +120,7 @@ const ProjectChatbotPage = () => {
                   </div>
 
                   <h1 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950">
-                    Hello, I&apos;m SociaBot
+                    Hello, I&apos;m SociaChat
                   </h1>
 
                   <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">

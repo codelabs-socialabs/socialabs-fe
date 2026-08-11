@@ -82,7 +82,7 @@ const ChatInputBar: React.FC<Props> = ({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask SociaBot anything about this dataset..."
+          placeholder="Ask SociaChat anything about this dataset..."
           disabled={isLoading}
           rows={1}
           className="custom-scrollbar max-h-[200px] w-full resize-none overflow-y-auto bg-transparent px-3 py-2 text-[15px] font-medium text-slate-900 outline-none placeholder:text-slate-500 disabled:opacity-50"
@@ -164,7 +164,7 @@ const ChatInputBar: React.FC<Props> = ({
 
       <div className="mb-1 mt-3 text-center">
         <span className="text-[11px] font-medium text-slate-400">
-          SociaBot can make mistakes. Consider verifying important information.
+          SociaChat can make mistakes. Consider verifying important information.
         </span>
       </div>
     </form>
