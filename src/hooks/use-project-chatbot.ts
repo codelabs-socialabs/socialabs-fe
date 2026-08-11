@@ -169,9 +169,9 @@ export function useProjectChatbot({
                 done?: boolean;
               };
 
-              if (payload.conversation_id && !activeConversationId) {
+              if (payload.conversation_id) {
                 setActiveConversationId(payload.conversation_id);
-                fetchConversations();
+                void fetchConversations();
               }
 
               if (payload.token) {
