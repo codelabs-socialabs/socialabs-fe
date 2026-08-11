@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Check, Copy, Link } from 'lucide-react';
+import { AlertTriangle, Check, Copy, Link, LoaderCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 import type { ChatMessageItem } from '@/types/chatbot';
@@ -65,6 +65,11 @@ const ChatMessageWindow: React.FC<Props> = ({ message, isTyping = false }) => {
         {isUser ? (
           <div className="rounded-3xl rounded-tr-sm bg-slate-100 px-5 py-3.5 text-[15px] font-medium leading-relaxed text-slate-900">
             {displayedText}
+          </div>
+        ) : !displayedText && isTyping ? (
+          <div className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500 shadow-sm animate-pulse">
+            <LoaderCircle size={15} className="animate-spin text-blue-600" />
+            <span>Thinking and analyzing dataset...</span>
           </div>
         ) : (
           <div className="prose prose-slate prose-sm md:prose-base max-w-none text-slate-800 prose-headings:font-bold prose-headings:text-slate-900 prose-p:leading-relaxed prose-a:text-blue-600 prose-strong:text-slate-900">
