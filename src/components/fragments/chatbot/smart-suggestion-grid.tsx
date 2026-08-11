@@ -113,5 +113,3 @@ const SmartSuggestionGrid: React.FC<Props> = ({
 };
 
 export default SmartSuggestionGrid;
-
-export default SmartSuggestionGrid;
