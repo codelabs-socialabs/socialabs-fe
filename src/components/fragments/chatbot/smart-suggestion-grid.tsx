@@ -1,39 +1,43 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import type { Topic } from '@/types/project';
 
 interface Props {
   onSelectPrompt: (prompt: string) => void;
+  topics?: Topic[] | null;
+  projectKeyword?: string;
 }
 
-// Hierarchical Topic Modeling Suggestions
-const TOPIC_SUGGESTIONS = [
-  {
-    topic: 'Topic 1: Kenaikan Harga Sembako',
-    keywords: ['harga', 'beras', 'naik', 'pasar'],
-    questions: [
-      'Apa keluhan utama terkait harga beras?',
-      'Siapa aktor yang paling disalahkan dalam topik sembako?',
-    ],
-  },
-  {
-    topic: 'Topic 2: Infrastruktur Jalan Rusak',
-    keywords: ['jalan', 'lobang', 'aspal', 'macet'],
-    questions: [
-      'Di daerah mana keluhan jalan rusak paling tinggi?',
-      'Bagaimana perbandingan sentimen positif vs negatif di topik jalan?',
-    ],
-  },
-  {
-    topic: 'Topic 3: Bantuan Sosial (Bansos)',
-    keywords: ['bansos', 'salah sasaran', 'pemerintah', 'rakyat'],
-    questions: [
-      'Apa narasi paling dominan terkait distribusi bansos?',
-      'Tolong buat ringkasan eksekutif dari percakapan bansos.',
-    ],
-  },
-];
+const SmartSuggestionGrid: React.FC<Props> = ({
+  onSelectPrompt,
+  topics,
+  projectKeyword = '',
+}) => {
+  const [expandedTopic, setExpandedTopic] = useState<number | null>(0);
 
-const SmartSuggestionGrid: React.FC<Props> = ({ onSelectPrompt }) => {
-  const [expandedTopic, setExpandedTopic] = useState<number | null>(0); // Default open first topic
+  const suggestions = useMemo(() => {
+    if (topics && topics.length > 0) {
+      return topics.slice(0, 4).map((t) => ({
+        topic: `Topic ${t.topicId}: ${t.context}`,
+        keywords: t.words.slice(0, 5),
+        questions: [
+          `Apa keluhan atau narasi utama terkait ${t.context}?`,
+          `Tolong buat ringkasan eksekutif dari percakapan topik ${t.context}.`,
+        ],
+      }));
+    }
+
+    const keyword = projectKeyword || 'dataset';
+    return [
+      {
+        topic: `Topic 1: Percakapan ${keyword}`,
+        keywords: [keyword, 'diskusi', 'publik', 'opini'],
+        questions: [
+          `Apa insight utama dari data percakapan ${keyword}?`,
+          `Siapa aktor atau influencer paling dominan dalam isu ${keyword}?`,
+        ],
+      },
+    ];
+  }, [topics, projectKeyword]);
 
   return (
     <div className="w-full max-w-3xl mx-auto mt-4 mb-8">
@@ -42,7 +46,7 @@ const SmartSuggestionGrid: React.FC<Props> = ({ onSelectPrompt }) => {
       </h3>
 
       <div className="flex flex-col gap-2">
-        {TOPIC_SUGGESTIONS.map((item, index) => {
+        {suggestions.map((item, index) => {
           const isExpanded = expandedTopic === index;
 
           return (
@@ -52,6 +56,7 @@ const SmartSuggestionGrid: React.FC<Props> = ({ onSelectPrompt }) => {
             >
               {/* Accordion Header (Click to toggle) */}
               <button
+                type="button"
                 onClick={() => setExpandedTopic(isExpanded ? null : index)}
                 className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-colors text-left ${isExpanded ? 'bg-slate-50 border border-slate-200' : 'bg-transparent'}`}
               >
@@ -67,7 +72,7 @@ const SmartSuggestionGrid: React.FC<Props> = ({ onSelectPrompt }) => {
                         key={idx}
                         className="text-[11px] font-medium text-slate-500 bg-slate-100/80 px-2 py-[2px] rounded-md"
                       >
-                        {kw}
+                        #{kw}
                       </span>
                     ))}
                   </div>
@@ -81,19 +86,20 @@ const SmartSuggestionGrid: React.FC<Props> = ({ onSelectPrompt }) => {
                 </div>
               </button>
 
-              {/* Accordion Body (Sub-questions) */}
+              {/* Sub-prompts (Show when expanded) */}
               {isExpanded && (
-                <div className="flex flex-col gap-1.5 px-4 pb-4 pt-3 mt-1 mr-4 ml-4 rounded-b-xl border-t border-slate-100 border-dashed">
-                  {item.questions.map((question, qIdx) => (
+                <div className="flex flex-col gap-1.5 p-3.5 pt-0 animate-in fade-in duration-200">
+                  {item.questions.map((q, qIdx) => (
                     <button
                       key={qIdx}
-                      onClick={() => onSelectPrompt(question)}
-                      className="text-left text-[14px] text-slate-600 hover:text-blue-700 font-medium transition-all flex items-start gap-2 group w-full outline-none py-1.5 px-2 rounded-lg hover:bg-blue-50/50"
+                      type="button"
+                      onClick={() => onSelectPrompt(q)}
+                      className="group flex items-center gap-2.5 w-full p-2.5 rounded-lg text-left text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100/60 transition-all border border-slate-100/60"
                     >
-                      <span className="text-blue-400 group-hover:text-blue-500 mt-[1px] opacity-70 group-hover:opacity-100 transition-opacity">
-                        &rarr;
+                      <span className="text-slate-400 group-hover:text-slate-600 transition-colors">
+                        →
                       </span>
-                      <span className="leading-snug">{question}</span>
+                      <span>{q}</span>
                     </button>
                   ))}
                 </div>
@@ -105,5 +111,7 @@ const SmartSuggestionGrid: React.FC<Props> = ({ onSelectPrompt }) => {
     </div>
   );
 };
+
+export default SmartSuggestionGrid;
 
 export default SmartSuggestionGrid;

@@ -8,6 +8,8 @@ import ChatMessageWindow from '@/components/fragments/chatbot/chat-message-windo
 import SidebarChatbot from '@/components/fragments/chatbot/sidebar-chatbot';
 import SmartSuggestionGrid from '@/components/fragments/chatbot/smart-suggestion-grid';
 import { useProjectChatbot } from '@/hooks/use-project-chatbot';
+import { useProjectTopics } from '@/hooks/use-project-topics';
+import { useProjectStore } from '@/stores/project-store';
 import type { ChatProcessingType } from '@/types/chatbot';
 
 interface ProjectRouteParams {
@@ -18,6 +20,12 @@ interface ProjectRouteParams {
 
 const ProjectChatbotPage = () => {
   const { workspaceId = '', projectId = '' } = useParams<ProjectRouteParams>();
+
+  const project = useProjectStore((state) => {
+    const projects = state.projectsByWorkspaceId[workspaceId] ?? [];
+    return projects.find((p) => p.id === projectId) ?? null;
+  });
+  const { topics } = useProjectTopics(workspaceId, projectId);
 
   const {
     messages,
@@ -124,12 +132,16 @@ const ProjectChatbotPage = () => {
 
                 {/* Context */}
                 <div className="mt-8 w-full">
-                  <ChatHeaderContext />
+                  <ChatHeaderContext project={project} />
                 </div>
 
                 {/* Suggestions */}
                 <div className="mt-8 w-full">
-                  <SmartSuggestionGrid onSelectPrompt={handleSendMessage} />
+                  <SmartSuggestionGrid
+                    onSelectPrompt={handleSendMessage}
+                    topics={topics}
+                    projectKeyword={project?.keyword}
+                  />
                 </div>
               </div>
             ) : (
