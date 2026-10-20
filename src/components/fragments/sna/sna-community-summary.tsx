@@ -1,53 +1,41 @@
-import React from 'react';
-import { MessageSquareText } from 'lucide-react';
+import React, { useMemo } from 'react';
+import type { SNACommunityResult } from '@/types/project';
 
-interface ClusterData {
-  id: string;
-  name: string;
-  sizePercentage: number;
-  dominantTopic: string;
-  color: string;
+interface SNACommunitySummaryProps {
+  data?: SNACommunityResult | null;
 }
 
-const mockClusters: ClusterData[] = [
-  {
-    id: 'A',
-    name: 'Cluster A',
-    sizePercentage: 34,
-    dominantTopic: 'Kebijakan Publik & Anggaran',
-    color: 'bg-emerald-500',
-  },
-  {
-    id: 'B',
-    name: 'Cluster B',
-    sizePercentage: 22,
-    dominantTopic: 'Aksi Protes & Mahasiswa',
-    color: 'bg-rose-500',
-  },
-  {
-    id: 'C',
-    name: 'Cluster C',
-    sizePercentage: 15,
-    dominantTopic: 'Ekonomi Kerakyatan',
-    color: 'bg-blue-500',
-  },
-  {
-    id: 'D',
-    name: 'Cluster D',
-    sizePercentage: 11,
-    dominantTopic: 'Humor & Sarkasme Politik',
-    color: 'bg-amber-500',
-  },
-  {
-    id: 'E',
-    name: 'Cluster E',
-    sizePercentage: 18,
-    dominantTopic: 'Lainnya (Sparse)',
-    color: 'bg-slate-400',
-  },
+const PALETTE = [
+  'bg-emerald-500',
+  'bg-rose-500',
+  'bg-blue-500',
+  'bg-amber-500',
+  'bg-purple-500',
+  'bg-pink-500',
+  'bg-slate-400',
 ];
 
-const SNACommunitySummary: React.FC = () => {
+const SNACommunitySummary: React.FC<SNACommunitySummaryProps> = ({ data }) => {
+  const clusters = useMemo(() => {
+    if (!data || !data.nodes || data.nodes.length === 0) return [];
+
+    const counts: Record<number, number> = {};
+    for (const node of data.nodes) {
+      counts[node.community] = (counts[node.community] ?? 0) + 1;
+    }
+
+    const total = data.nodes.length;
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+    return sorted.map(([commId, count], idx) => ({
+      id: commId,
+      name: `Community ${commId}`,
+      count,
+      sizePercentage: Math.round((count / total) * 100),
+      color: PALETTE[idx % PALETTE.length],
+    }));
+  }, [data]);
+
   return (
     <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] p-6 lg:p-8 flex flex-col h-full">
       <div className="mb-6">
@@ -61,35 +49,37 @@ const SNACommunitySummary: React.FC = () => {
       </div>
 
       <div className="flex-1 flex flex-col justify-center space-y-6">
-        {mockClusters.map((cluster) => (
-          <div key={cluster.id} className="relative">
-            <div className="flex justify-between items-end mb-2">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-3 h-3 rounded-full shadow-sm ${cluster.color}`}
-                />
-                <span className="font-bold text-slate-800 text-sm">
-                  {cluster.name}
+        {clusters.length === 0 ? (
+          <p className="text-sm text-slate-500">No community data available.</p>
+        ) : (
+          clusters.map((cluster) => (
+            <div key={cluster.id} className="relative">
+              <div className="flex justify-between items-end mb-2">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-3 h-3 rounded-full shadow-sm ${cluster.color}`}
+                  />
+                  <span className="font-bold text-slate-800 text-sm">
+                    {cluster.name}
+                  </span>
+                </div>
+                <span className="font-black text-slate-900 text-lg">
+                  {cluster.sizePercentage}%
                 </span>
               </div>
-              <span className="font-black text-slate-900 text-lg">
-                {cluster.sizePercentage}%
-              </span>
-            </div>
 
-            <div className="w-full bg-slate-100 rounded-full h-2 mb-3 overflow-hidden">
-              <div
-                className={`h-full rounded-full ${cluster.color}`}
-                style={{ width: `${cluster.sizePercentage}%` }}
-              />
+              <div className="w-full bg-slate-100 rounded-full h-2 mb-1 overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${cluster.color}`}
+                  style={{ width: `${cluster.sizePercentage}%` }}
+                />
+              </div>
+              <p className="text-[11px] font-medium text-slate-400 text-right">
+                {cluster.count} accounts
+              </p>
             </div>
-
-            <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 bg-slate-50 w-max px-2.5 py-1 rounded-md border border-slate-100">
-              <MessageSquareText size={12} className="text-slate-400" />
-              {cluster.dominantTopic}
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

@@ -1,142 +1,259 @@
 import {
   AlignLeft,
-  BadgeCheck,
-  Download,
+  BrainCircuit,
+  Database,
+  ExternalLink,
   Hash,
   Heart,
+  LoaderCircle,
   MessageSquare,
-  Minus,
+  Play,
   Share2,
-  TrendingDown,
-  TrendingUp,
-  X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router';
+import { toast } from 'sonner';
 
-const TopicProjectPage = () => {
-  const [selectedTopicId, setSelectedTopicId] = useState<string>('t1');
+import { projectApi } from '@/lib/api/project-api';
+import { useProjectProgress } from '@/hooks/use-project-progress';
+import { useProjectStore } from '@/stores/project-store';
+import { useProjectTopics } from '@/hooks/use-project-topics';
+import { useTopicDocuments } from '@/hooks/use-topic-documents';
 
-  const topics = [
-    {
-      id: 't1',
-      name: 'Food Quality & Portion Complaints',
-      volume: '8,452',
-      trend: 'up',
-      trendLabel: 'Trending Up',
-      keywords: [
-        'basi',
-        'keras',
-        'porsi dikit',
-        'sayur layu',
-        'gak layak',
-        'kualitas',
-        'ayam',
-      ],
-      aiSummary:
-        'Klaster terbesar ini didominasi oleh keluhan siswa dan mahasiswa terkait lauk ayam yang keras dan sayur yang sudah tidak segar saat dibagikan. Terdapat korelasi kuat antara keluhan ini dengan pendistribusian di area spesifik Jatinangor.',
-      samplePosts: [
-        {
-          name: 'Mahasiswa Unpad',
-          handle: '@mahasiswakeren',
-          time: '10:42 AM · Feb 12, 2026',
-          verified: false,
-          text: 'Hari ini dapet jatah mbg tapi ayamnya keras banget, sayurnya juga udah layu. Tolong dong evaluasi vendornya! Gak layak makan ini mah. #MBGJatinangor',
-        },
-        {
-          name: 'Warga Lokal',
-          handle: '@warga_jatinangor',
-          time: '08:15 AM · Feb 12, 2026',
-          verified: false,
-          text: 'Porsi hari ini mendingan sih, tapi tetep aja nasinya agak lembek. Semoga besok evaluasi lagi ya. Semangat terus buat yang masak di dapur umum.',
-        },
-      ],
-    },
-    {
-      id: 't2',
-      name: 'Logistics & Distribution Delays',
-      volume: '5,420',
-      trend: 'stable',
-      trendLabel: 'Stable',
-      keywords: [
-        'telat',
-        'jam istirahat',
-        'lapar',
-        'nunggu lama',
-        'distribusi kacau',
-        'kurir',
-        'koordinasi',
-      ],
-      aiSummary:
-        'Percakapan berpusat pada masalah operasional di mana makanan sering tiba setelah jam istirahat siang usai. Hal ini menyebabkan keluhan jadwal yang terganggu.',
-      samplePosts: [
-        {
-          name: 'Guru SMP 1',
-          handle: '@guru_smpn1',
-          time: '01:30 PM · Feb 11, 2026',
-          verified: true,
-          text: 'Anak-anak udah pada nunggu dari jam 12, makanan baru dateng jam 13.30. Kasihan pada kelaparan, padahal jam 1 udah mulai masuk kelas lagi. Mohon perbaiki sistem distribusinya.',
-        },
-      ],
-    },
-    {
-      id: 't3',
-      name: 'Packaging Waste Concerns',
-      volume: '4,410',
-      trend: 'up',
-      trendLabel: 'Trending Up',
-      keywords: [
-        'sampah plastik',
-        'kotak makan',
-        'numpuk',
-        'lingkungan',
-        'daur ulang',
-        'BEM',
-      ],
-      aiSummary:
-        'Kekhawatiran yang disuarakan oleh mahasiswa dan aktivis lingkungan terkait lonjakan volume sampah plastik dari kotak makan sekali pakai yang mulai menumpuk.',
-      samplePosts: [
-        {
-          name: 'BEM Kema Unpad',
-          handle: '@bem_unpad',
-          time: '04:20 PM · Feb 10, 2026',
-          verified: true,
-          text: 'Kami mendukung program pemenuhan gizi, namun pemerintah juga harus memikirkan solusi waste management-nya. Sampah plastik kotak MBG mulai menumpuk tak terkendali di sekitar kampus.',
-        },
-      ],
-    },
-    {
-      id: 't4',
-      name: 'Local Vendor Empowerment',
-      volume: '2,980',
-      trend: 'down',
-      trendLabel: 'Declining',
-      keywords: [
-        'ibu pkk',
-        'katering lokal',
-        'terbantu',
-        'ekonomi',
-        'pemberdayaan',
-        'dapur umum',
-      ],
-      aiSummary:
-        'Percakapan mengenai pelibatan ibu-ibu PKK dan katering lokal di Jatinangor. Walaupun positif, volume percakapan topik ini mulai menurun tergantikan oleh isu operasional.',
-      samplePosts: [
-        {
-          name: 'Katering Teh Euceu',
-          handle: '@katering_teh_euceu',
-          time: '09:00 AM · Feb 08, 2026',
-          verified: false,
-          text: 'Alhamdulillah, sejak ada program MBG ini ibu-ibu di RW 04 jadi punya penghasilan tambahan buat bantu suami. Semangat terus puas-puasin masaknya! Berkah buat semua.',
-        },
-      ],
-    },
-  ];
+interface ProjectRouteParams {
+  workspaceId: string;
+  projectId: string;
+  [key: string]: string | undefined;
+}
 
-  const selectedTopic = topics.find((topic) => topic.id === selectedTopicId);
+const formatNumber = (value: number): string => value.toLocaleString('en-US');
 
-  const dominantTopic = topics[0];
+const ProjectTopicsPage = () => {
+  const { workspaceId, projectId } = useParams<ProjectRouteParams>();
+  const { topics, isLoading, error, refetch } = useProjectTopics(
+    workspaceId ?? '',
+    projectId ?? '',
+  );
 
-  const fastestGrowingTopic = topics.find((topic) => topic.trend === 'up');
+  const project = useProjectStore((state) => {
+    const projects = state.projectsByWorkspace[workspaceId ?? ''] ?? [];
+    return projects.find((p) => p.id === projectId) ?? null;
+  });
+
+  useProjectProgress(workspaceId ?? '', projectId ?? '');
+
+  const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
+  const [isTriggering, setIsTriggering] = useState(false);
+
+  const selectedTopic =
+    topics?.find((t) => t.topicId === selectedTopicId) ?? null;
+
+  const {
+    documents,
+    isLoading: docsLoading,
+    error: docsError,
+  } = useTopicDocuments(
+    workspaceId ?? '',
+    projectId ?? '',
+    selectedTopic?.topicId,
+  );
+
+  const isModeling =
+    project?.processing?.status === 'MODELING' ||
+    project?.processing?.stage === 'MODELING';
+
+  const isFailed = project?.processing?.status === 'FAILED';
+  const failedStage = project?.processing?.error?.stage;
+
+  useEffect(() => {
+    if (project?.processing?.status === 'COMPLETED' && !topics) {
+      refetch();
+    }
+  }, [project?.processing?.status, topics, refetch]);
+
+  useEffect(() => {
+    if (topics && topics.length > 0 && selectedTopicId === null) {
+      setSelectedTopicId(topics[0].topicId);
+    }
+  }, [topics, selectedTopicId]);
+
+  const handleTriggerModeling = async () => {
+    if (!workspaceId || !projectId) return;
+    setIsTriggering(true);
+    try {
+      await projectApi.processTopics(workspaceId, projectId);
+      toast.success('Topic modeling started.', {
+        description: 'Results will appear when processing completes.',
+      });
+    } catch {
+      toast.error('Failed to start topic modeling.');
+    } finally {
+      setIsTriggering(false);
+    }
+  };
+
+  if (isLoading && !topics) {
+    return (
+      <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
+        <p className="text-sm text-slate-500">Loading topics…</p>
+      </div>
+    );
+  }
+
+  if (error && !topics) {
+    return (
+      <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-6">
+          <p className="text-sm font-medium text-red-800">
+            Unable to load topics
+          </p>
+          <p className="mt-1 text-sm text-red-700">{error}</p>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={refetch}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+            >
+              Try again
+            </button>
+            <button
+              type="button"
+              onClick={handleTriggerModeling}
+              disabled={isTriggering}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+            >
+              {isTriggering ? (
+                <LoaderCircle size={14} className="animate-spin" />
+              ) : (
+                <Play size={14} />
+              )}
+              Run Topic Modeling
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (
+    (!topics || topics.length === 0) &&
+    isFailed &&
+    failedStage === 'MODELING'
+  ) {
+    return (
+      <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
+        <div className="space-y-6 pb-10">
+          <header>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+              Topic Modeling
+            </h1>
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500">
+              Discover the primary narratives driving the conversation.
+            </p>
+          </header>
+
+          <div className="rounded-xl border border-red-200 bg-red-50 p-12 text-center">
+            <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-red-100 text-red-600">
+              <BrainCircuit size={24} />
+            </div>
+            <h3 className="mt-4 text-sm font-semibold text-slate-900">
+              Topic modeling gagal
+            </h3>
+            <p className="mt-1 max-w-sm mx-auto text-sm leading-relaxed text-red-700">
+              {project?.processing?.error?.message ??
+                'Terjadi kesalahan saat proses topic modeling.'}
+            </p>
+            <button
+              type="button"
+              onClick={handleTriggerModeling}
+              disabled={isTriggering}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
+            >
+              {isTriggering ? (
+                <LoaderCircle size={14} className="animate-spin" />
+              ) : (
+                <Play size={14} />
+              )}
+              Run Topic Modeling
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if ((!topics || topics.length === 0) && isModeling) {
+    return (
+      <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
+        <div className="space-y-6 pb-10">
+          <header>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+              Topic Modeling
+            </h1>
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500">
+              Discover the primary narratives driving the conversation.
+            </p>
+          </header>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
+            <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <BrainCircuit size={24} />
+            </div>
+            <h3 className="mt-4 text-sm font-semibold text-slate-900">
+              Topic modeling sedang berjalan
+            </h3>
+            <p className="mt-1 max-w-sm mx-auto text-sm leading-relaxed text-slate-500">
+              Proses ETM training sedang berlangsung. Halaman ini akan otomatis
+              menampilkan hasil setelah selesai.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!topics || topics.length === 0) {
+    return (
+      <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
+        <div className="space-y-6 pb-10">
+          <header>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+              Topic Modeling
+            </h1>
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500">
+              Discover the primary narratives driving the conversation.
+            </p>
+          </header>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
+            <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+              <Database size={24} />
+            </div>
+            <h3 className="mt-4 text-sm font-semibold text-slate-900">
+              Tidak ada topics ditemukan
+            </h3>
+            <p className="mt-1 max-w-sm mx-auto text-sm leading-relaxed text-slate-500">
+              Topic modeling belum dijalankan untuk project ini. Jalankan secara
+              manual atau tunggu hingga crawling selesai.
+            </p>
+            <button
+              type="button"
+              onClick={handleTriggerModeling}
+              disabled={isTriggering}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
+            >
+              {isTriggering ? (
+                <LoaderCircle size={14} className="animate-spin" />
+              ) : (
+                <Play size={14} />
+              )}
+              Run Topic Modeling
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-7xl px-6 py-8 lg:px-8">
@@ -147,32 +264,21 @@ const TopicProjectPage = () => {
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
               Topic Modeling
             </h1>
-
             <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500">
               Discover the primary narratives driving the conversation. Topics
               are automatically clustered by AI to reveal the discussion
               patterns that matter most.
             </p>
           </div>
-
-          <button
-            type="button"
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-          >
-            <Download size={16} />
-            Export
-          </button>
         </header>
 
         {/* Summary */}
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <p className="text-xs font-medium text-slate-500">Total clusters</p>
-
             <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
               {topics.length}
             </p>
-
             <p className="mt-2 text-xs text-slate-400">
               Detected conversation groups
             </p>
@@ -180,11 +286,9 @@ const TopicProjectPage = () => {
 
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <p className="text-xs font-medium text-slate-500">Dominant topic</p>
-
             <p className="mt-2 line-clamp-2 text-base font-semibold leading-snug text-slate-900">
-              {dominantTopic?.name ?? 'No topic'}
+              {topics[0]?.context ?? 'No topic'}
             </p>
-
             <p className="mt-2 text-xs text-slate-400">
               Highest discussion volume
             </p>
@@ -192,17 +296,12 @@ const TopicProjectPage = () => {
 
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <p className="text-xs font-medium text-slate-500">
-              Fastest growing
+              Total documents
             </p>
-
-            <p className="mt-2 line-clamp-2 text-base font-semibold leading-snug text-slate-900">
-              {fastestGrowingTopic?.name ?? 'No growing topic'}
+            <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+              {formatNumber(documents.length)}
             </p>
-
-            <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-emerald-600">
-              <TrendingUp size={13} />
-              Volume increasing
-            </div>
+            <p className="mt-2 text-xs text-slate-400">Across all topics</p>
           </div>
         </section>
 
@@ -214,7 +313,6 @@ const TopicProjectPage = () => {
               <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                 Detected Narratives
               </h2>
-
               <span className="text-xs text-slate-400">
                 {topics.length} topics
               </span>
@@ -222,13 +320,13 @@ const TopicProjectPage = () => {
 
             <div className="space-y-2.5">
               {topics.map((topic) => {
-                const isSelected = selectedTopicId === topic.id;
+                const isSelected = selectedTopicId === topic.topicId;
 
                 return (
                   <button
-                    key={topic.id}
+                    key={topic.topicId}
                     type="button"
-                    onClick={() => setSelectedTopicId(topic.id)}
+                    onClick={() => setSelectedTopicId(topic.topicId)}
                     className={`relative w-full overflow-hidden rounded-xl border p-4 text-left transition ${
                       isSelected
                         ? 'border-red-200 bg-red-50/70'
@@ -244,31 +342,13 @@ const TopicProjectPage = () => {
                         isSelected ? 'text-slate-950' : 'text-slate-800'
                       }`}
                     >
-                      {topic.name}
+                      {topic.context}
                     </h3>
 
                     <div className="mt-4 flex items-center justify-between gap-3">
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
                         <AlignLeft size={13} className="text-slate-400" />
-                        {topic.volume} posts
-                      </span>
-
-                      <span
-                        className={`inline-flex shrink-0 items-center gap-1 text-xs font-medium ${
-                          topic.trend === 'up'
-                            ? 'text-emerald-600'
-                            : topic.trend === 'down'
-                              ? 'text-slate-400'
-                              : 'text-slate-500'
-                        }`}
-                      >
-                        {topic.trend === 'up' && <TrendingUp size={13} />}
-
-                        {topic.trend === 'down' && <TrendingDown size={13} />}
-
-                        {topic.trend === 'stable' && <Minus size={13} />}
-
-                        {topic.trendLabel}
+                        {topic.words.length} keywords
                       </span>
                     </div>
                   </button>
@@ -285,35 +365,14 @@ const TopicProjectPage = () => {
                   <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-slate-500">
                       <Hash size={15} />
-
                       <span className="text-xs font-semibold uppercase tracking-[0.12em]">
-                        Topic Details
+                        Topic {selectedTopic.topicId}
                       </span>
                     </div>
-
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${
-                        selectedTopic.trend === 'up'
-                          ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/10'
-                          : selectedTopic.trend === 'down'
-                            ? 'bg-slate-100 text-slate-500 ring-slate-500/10'
-                            : 'bg-slate-50 text-slate-600 ring-slate-500/10'
-                      }`}
-                    >
-                      {selectedTopic.trend === 'up' && <TrendingUp size={12} />}
-
-                      {selectedTopic.trend === 'down' && (
-                        <TrendingDown size={12} />
-                      )}
-
-                      {selectedTopic.trend === 'stable' && <Minus size={12} />}
-
-                      {selectedTopic.trendLabel}
-                    </span>
                   </div>
 
                   <h2 className="text-2xl font-semibold tracking-tight text-slate-950">
-                    {selectedTopic.name}
+                    {selectedTopic.context}
                   </h2>
 
                   {/* AI summary */}
@@ -322,14 +381,12 @@ const TopicProjectPage = () => {
                       <span className="flex size-6 items-center justify-center rounded-md bg-white text-xs font-semibold text-red-600 ring-1 ring-slate-200">
                         AI
                       </span>
-
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                         Topic Summary
                       </p>
                     </div>
-
                     <p className="text-sm leading-relaxed text-slate-700">
-                      {selectedTopic.aiSummary}
+                      {selectedTopic.context}
                     </p>
                   </div>
 
@@ -338,9 +395,8 @@ const TopicProjectPage = () => {
                     <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                       Top Keywords
                     </p>
-
                     <div className="flex flex-wrap gap-2">
-                      {selectedTopic.keywords.map((keyword) => (
+                      {selectedTopic.words.map((keyword) => (
                         <span
                           key={keyword}
                           className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600"
@@ -359,102 +415,104 @@ const TopicProjectPage = () => {
                       <h3 className="text-sm font-semibold text-slate-900">
                         Representative Posts
                       </h3>
-
                       <p className="mt-1 text-xs text-slate-500">
                         Examples that best represent this topic.
                       </p>
                     </div>
-
                     <span className="text-xs text-slate-400">
-                      {selectedTopic.samplePosts.length}{' '}
-                      {selectedTopic.samplePosts.length === 1
-                        ? 'post'
-                        : 'posts'}
+                      {docsLoading
+                        ? 'Loading…'
+                        : `${documents.length} ${documents.length === 1 ? 'post' : 'posts'}`}
                     </span>
                   </div>
 
+                  {docsError && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                      <p className="text-sm text-red-700">{docsError}</p>
+                    </div>
+                  )}
+
+                  {!docsLoading && !docsError && documents.length === 0 && (
+                    <p className="text-sm text-slate-500">
+                      No documents found for this topic.
+                    </p>
+                  )}
+
                   <div className="space-y-4">
-                    {selectedTopic.samplePosts.map((post) => (
+                    {documents.slice(0, 10).map((doc) => (
                       <article
-                        key={`${post.handle}-${post.time}`}
+                        key={doc.id}
                         className="rounded-xl border border-slate-200 bg-white p-5"
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex min-w-0 items-center gap-3">
                             <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-sm font-semibold text-slate-600">
-                              {post.name.charAt(0).toUpperCase()}
+                              {(doc.username || 'U').charAt(0).toUpperCase()}
                             </div>
-
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5">
                                 <p className="truncate text-sm font-semibold text-slate-900">
-                                  {post.name}
+                                  {doc.username || 'Unknown'}
                                 </p>
-
-                                {post.verified && (
-                                  <BadgeCheck
-                                    size={15}
-                                    className="shrink-0 fill-blue-500 text-white"
-                                  />
-                                )}
                               </div>
-
                               <p className="truncate text-xs text-slate-500">
-                                {post.handle}
+                                @{doc.username || 'unknown'}
                               </p>
                             </div>
                           </div>
-
-                          <X size={18} className="shrink-0 text-slate-300" />
+                          <span className="text-xs font-medium text-slate-400">
+                            {(doc.probability * 100).toFixed(0)}% match
+                          </span>
                         </div>
 
                         <p className="mt-4 whitespace-pre-wrap text-[15px] leading-relaxed text-slate-800">
-                          {post.text}
+                          {doc.rawText || doc.fullText}
                         </p>
 
-                        <p className="mt-4 border-b border-slate-100 pb-4 text-xs font-medium text-slate-500">
-                          {post.time}
-                        </p>
-
-                        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-4">
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 transition hover:text-red-500"
+                        {doc.tweetUrl && (
+                          <a
+                            href={doc.tweetUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:underline"
                           >
+                            <ExternalLink size={12} />
+                            View original
+                          </a>
+                        )}
+
+                        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-slate-100 pt-4">
+                          <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
                             <Heart size={15} />
                             Like
-                          </button>
-
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 transition hover:text-blue-500"
-                          >
+                          </span>
+                          <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
                             <MessageSquare size={15} />
                             Reply
-                          </button>
-
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 transition hover:text-slate-900"
-                          >
+                          </span>
+                          <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
                             <Share2 size={15} />
                             Copy link
-                          </button>
+                          </span>
                         </div>
                       </article>
                     ))}
                   </div>
+
+                  {documents.length > 10 && (
+                    <p className="mt-4 text-xs text-slate-400">
+                      Showing 10 of {formatNumber(documents.length)} documents
+                    </p>
+                  )}
                 </div>
               </>
             ) : (
               <div className="flex min-h-96 items-center justify-center p-8 text-center">
                 <div>
                   <Hash size={24} className="mx-auto text-slate-400" />
-
                   <h2 className="mt-3 text-sm font-semibold text-slate-900">
                     Select a topic
                   </h2>
-
                   <p className="mt-1 text-sm text-slate-500">
                     Choose a narrative to view its details.
                   </p>
@@ -468,4 +526,4 @@ const TopicProjectPage = () => {
   );
 };
 
-export default TopicProjectPage;
+export default ProjectTopicsPage;

@@ -3,7 +3,7 @@ import { useParams } from 'react-router';
 import { useWorkspaceStore } from '@/stores/workspace-store';
 import { WorkspacePlan, type WorkspaceUsage } from '@/types/workspace';
 
-interface WorkspaceRouteParams {
+interface WorkspaceRouteParams extends Record<string, string | undefined> {
   workspaceId: string;
 }
 

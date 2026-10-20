@@ -18,7 +18,7 @@ const GuestRoute = () => {
   }
 
   if (status === 'authenticated') {
-    return <Navigate to="/workspace" replace />;
+    return <Navigate to="/workspaces" replace />;
   }
 
   console.info('[GuestRoute] rendering outlet');

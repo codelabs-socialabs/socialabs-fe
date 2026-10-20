@@ -16,7 +16,7 @@ type WorkspaceItem = ReturnType<
   typeof useWorkspaceStore.getState
 >['workspaces'][number];
 
-interface WorkspaceRouteParams {
+interface WorkspaceRouteParams extends Record<string, string | undefined> {
   workspaceId: string;
 }
 
@@ -494,11 +494,11 @@ const WorkspacePage = () => {
   }, [workspaceId, workspaces]);
 
   if (!workspaceId) {
-    return <Navigate to="/workspace" replace />;
+    return <Navigate to="/workspaces" replace />;
   }
 
   if (!activeWorkspace) {
-    return <Navigate to="/workspace" replace />;
+    return <Navigate to="/workspaces" replace />;
   }
 
   return (

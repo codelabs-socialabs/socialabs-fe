@@ -1,17 +1,19 @@
 export type WorkspaceType = 'PERSONAL' | 'TEAM';
 
-export enum WorkspacePlan {
-  FREE = 'FREE',
-  PRO = 'PRO',
-  ENTERPRISE = 'ENTERPRISE',
-}
+export const WorkspacePlan = {
+  FREE: 'FREE',
+  PRO: 'PRO',
+  ENTERPRISE: 'ENTERPRISE',
+} as const;
+export type WorkspacePlan = (typeof WorkspacePlan)[keyof typeof WorkspacePlan];
 
-export enum WorkspaceRole {
-  OWNER = 'OWNER',
-  ADMIN = 'ADMIN',
-  ANALYST = 'ANALYST',
-  VIEWER = 'VIEWER',
-}
+export const WorkspaceRole = {
+  OWNER: 'OWNER',
+  ADMIN: 'ADMIN',
+  ANALYST: 'ANALYST',
+  VIEWER: 'VIEWER',
+} as const;
+export type WorkspaceRole = (typeof WorkspaceRole)[keyof typeof WorkspaceRole];
 
 export interface WorkspaceUsage {
   used: number;
@@ -32,11 +34,13 @@ export interface CreateWorkspaceResponse {
 
 export interface Workspace {
   id: string;
+  _id?: string;
   name: string;
   description: string;
   type: WorkspaceType;
   plan: WorkspacePlan;
   isPersonal: boolean;
   role?: WorkspaceRole;
+  membersCount?: number;
   usage?: WorkspaceUsage;
 }

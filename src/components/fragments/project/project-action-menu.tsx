@@ -38,9 +38,7 @@ const ProjectActionMenu = ({ project }: ProjectActionMenuProps) => {
 
   const duplicateProject = useProjectStore((state) => state.duplicateProject);
 
-  const archiveProject = useProjectStore((state) => state.archiveProject);
-
-  const restoreProject = useProjectStore((state) => state.restoreProject);
+  const updateProject = useProjectStore((state) => state.updateProject);
 
   const deleteProject = useProjectStore((state) => state.deleteProject);
 
@@ -140,9 +138,9 @@ const ProjectActionMenu = ({ project }: ProjectActionMenuProps) => {
     setIsOpen(false);
 
     try {
-      const result = project.isArchived
-        ? await restoreProject(project.workspaceId, project.id)
-        : await archiveProject(project.workspaceId, project.id);
+      const result = await updateProject(project.workspaceId, project.id, {
+        isArchived: !project.isArchived,
+      });
 
       if (!result) {
         return;

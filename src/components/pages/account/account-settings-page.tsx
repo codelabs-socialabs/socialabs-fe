@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Copy, Download, Trash2, UserX, X } from 'lucide-react';
 import { useState } from 'react';
 
@@ -14,41 +13,11 @@ const AccountSettingsPage = () => {
 
   const [timezone, setTimezone] = useState('Asia/Jakarta');
 
-  const [hasChanges, setHasChanges] = useState(false);
-
-  const [isSaving, setIsSaving] = useState(false);
-
-  const [savedSuccessfully, setSavedSuccessfully] = useState(false);
-
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
-
-  const markAsChanged = (): void => {
-    setHasChanges(true);
-  };
-
-  // const handleSave = async (): Promise<void> => {
-  //   if (!hasChanges || isSaving) {
-  //     return;
-  //   }
-
-  //   setIsSaving(true);
-  //   setSavedSuccessfully(false);
-
-  //   try {
-  //     await new Promise<void>((resolve) => {
-  //       window.setTimeout(resolve, 500);
-  //     });
-
-  //     setHasChanges(false);
-  //     setSavedSuccessfully(true);
-  //   } finally {
-  //     setIsSaving(false);
-  //   }
-  // };
 
   const handleCopyAccountId = async (): Promise<void> => {
     try {
@@ -107,7 +76,6 @@ const AccountSettingsPage = () => {
                     value={language}
                     onChange={(event) => {
                       setLanguage(event.target.value);
-                      markAsChanged();
                     }}
                     className={`${selectClassName} mt-2`}
                   >
@@ -130,7 +98,6 @@ const AccountSettingsPage = () => {
                     value={timezone}
                     onChange={(event) => {
                       setTimezone(event.target.value);
-                      markAsChanged();
                     }}
                     className={`${selectClassName} mt-2`}
                   >

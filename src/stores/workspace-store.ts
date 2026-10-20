@@ -86,6 +86,12 @@ const getErrorMessage = (error: unknown, fallbackMessage: string): string => {
   return fallbackMessage;
 };
 
+const normalizeWorkspace = (workspace: Workspace): Workspace => ({
+  ...workspace,
+  id: workspace._id ?? workspace.id,
+  isPersonal: workspace.isPersonal ?? workspace.type === 'PERSONAL',
+});
+
 const getNextActiveWorkspaceId = (workspaces: Workspace[]): string | null => {
   const personalWorkspace = workspaces.find(
     (workspace) => workspace.isPersonal,
@@ -183,7 +189,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
            *   data: [...]
            * }
            */
-          const fetchedWorkspaces = response.data;
+          const fetchedWorkspaces = response.data.map(normalizeWorkspace);
 
           /*
            * Kalau response backend berbentuk:
@@ -260,7 +266,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         try {
           const response = await workspaceApi.getWorkspace(workspaceId);
 
-          const workspace = response.data;
+          const workspace = normalizeWorkspace(response.data);
 
           get().addWorkspace(workspace);
 
@@ -293,7 +299,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         try {
           const response = await workspaceApi.createWorkspace(input);
 
-          const createdWorkspace = response.data;
+          const createdWorkspace = normalizeWorkspace(response.data);
 
           get().addWorkspace(createdWorkspace);
 
@@ -342,7 +348,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             input,
           );
 
-          const updatedWorkspace = response.data;
+          const updatedWorkspace = normalizeWorkspace(response.data);
 
           get().replaceWorkspace(updatedWorkspace);
 
@@ -410,37 +416,41 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       },
 
       addWorkspace: (workspace: Workspace): void => {
+        const normalized = normalizeWorkspace(workspace);
+
         const workspaceExists = get().workspaces.some(
-          (item) => item.id === workspace.id,
+          (item) => item.id === normalized.id,
         );
 
         if (workspaceExists) {
-          get().replaceWorkspace(workspace);
+          get().replaceWorkspace(normalized);
           return;
         }
 
         set((state) => ({
-          workspaces: [...state.workspaces, workspace],
-          activeWorkspaceId: workspace.id,
+          workspaces: [...state.workspaces, normalized],
+          activeWorkspaceId: normalized.id,
           error: null,
         }));
       },
 
       replaceWorkspace: (workspace: Workspace): void => {
+        const normalized = normalizeWorkspace(workspace);
+
         set((state) => {
           const workspaceExists = state.workspaces.some(
-            (item) => item.id === workspace.id,
+            (item) => item.id === normalized.id,
           );
 
           if (!workspaceExists) {
             return {
-              workspaces: [...state.workspaces, workspace],
+              workspaces: [...state.workspaces, normalized],
             };
           }
 
           return {
             workspaces: state.workspaces.map((item) =>
-              item.id === workspace.id ? workspace : item,
+              item.id === normalized.id ? normalized : item,
             ),
           };
         });

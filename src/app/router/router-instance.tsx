@@ -315,7 +315,7 @@ export const router = createBrowserRouter([
           },
 
           {
-            path: 'influence',
+            path: 'influencers',
             async lazy() {
               const module =
                 await import('@/components/pages/project/project-influencer-page');

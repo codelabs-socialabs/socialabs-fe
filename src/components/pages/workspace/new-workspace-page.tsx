@@ -300,16 +300,19 @@ const NewWorkspacePage = () => {
         minimumLoadingDelay,
       ]);
 
-      addWorkspace(response.data);
+      const workspace = response.data;
+      const workspaceId = workspace._id ?? workspace.id;
+
+      addWorkspace(workspace);
 
       toast.success('Workspace created successfully.', {
-        description: `Opening ${response.data.name}...`,
+        description: `Opening ${workspace.name}...`,
         duration: 2400,
       });
 
       await delay(600);
 
-      navigate(`/workspaces/${response.data.id}/overview`, {
+      navigate(`/workspaces/${workspaceId}/overview`, {
         replace: true,
       });
     } catch (error) {
@@ -346,7 +349,7 @@ const NewWorkspacePage = () => {
 
         {hasExistingWorkspace && (
           <Link
-            to="/workspace"
+            to="/workspaces"
             className="ml-auto inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -645,7 +648,7 @@ const NewWorkspacePage = () => {
                 >
                   {hasExistingWorkspace && (
                     <Link
-                      to="/workspace"
+                      to="/workspaces"
                       aria-disabled={isSubmitting}
                       className={`rounded-lg px-3 py-2.5 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 ${
                         isSubmitting ? 'pointer-events-none opacity-50' : ''

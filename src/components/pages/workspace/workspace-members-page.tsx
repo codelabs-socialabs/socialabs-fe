@@ -13,7 +13,7 @@ import type {
   WorkspaceMemberStatus,
 } from '@/types/workspace-member';
 
-interface WorkspaceRouteParams {
+interface WorkspaceRouteParams extends Record<string, string | undefined> {
   workspaceId: string;
 }
 
@@ -80,11 +80,11 @@ const WorkspaceMembersPage = () => {
   }, [members, roleFilter, searchQuery, statusFilter]);
 
   if (!workspaceId) {
-    return <Navigate to="/workspace" replace />;
+    return <Navigate to="/workspaces" replace />;
   }
 
   if (!workspace) {
-    return <Navigate to="/workspace" replace />;
+    return <Navigate to="/workspaces" replace />;
   }
 
   const activeMembers = members.filter((member) => member.status === 'ACTIVE');

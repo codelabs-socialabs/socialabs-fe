@@ -1,33 +1,65 @@
-import React, { useState } from 'react';
-import { TwitterTweetEmbed } from 'react-twitter-embed';
-import { MessageCircle } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { ExternalLink, MessageCircle } from 'lucide-react';
+import type { SNACommunityResult } from '@/types/project';
 
-const mockClusterData = {
-  'Cluster A': {
-    tweets: ['1460323737035677698', '933354946111705097'],
-    topic: 'Kebijakan Publik & Anggaran',
-    keywords: ['Pajak', 'Subsidi', 'APBN', 'Infrastruktur'],
-  },
-  'Cluster B': {
-    tweets: ['1853634123518382405', '1853634123518382405'],
-    topic: 'Aksi Protes & Mahasiswa',
-    keywords: ['Demo', 'Turun', 'Adili', 'Revolusi'],
-  },
-  'Cluster C': {
-    tweets: ['933354946111705097', '1853634123518382405'],
-    topic: 'Ekonomi Kerakyatan',
-    keywords: ['UMKM', 'Harga Sembako', 'Daya Beli'],
-  },
-  'Cluster D': {
-    tweets: ['1460323737035677698', '1853634123518382405'],
-    topic: 'Humor & Sarkasme Politik',
-    keywords: ['Meme', 'Gimmick', 'Lucu', 'Sarkas'],
-  },
-};
+interface SNAConversationProps {
+  data?: SNACommunityResult | null;
+}
 
-const SNAConversation: React.FC = () => {
-  const [activeCluster, setActiveCluster] =
-    useState<keyof typeof mockClusterData>('Cluster A');
+const SNAConversation: React.FC<SNAConversationProps> = ({ data }) => {
+  const clusterMap = useMemo(() => {
+    if (!data || !data.edges) return {};
+
+    const map: Record<
+      number,
+      {
+        topics: Set<string>;
+        interactions: Array<{
+          source: string;
+          target: string;
+          fullText: string;
+          topic: string;
+          tweetUrl: string;
+        }>;
+      }
+    > = {};
+
+    for (const edge of data.edges) {
+      const commId = edge.sourceCommunity ?? edge.source_community ?? 0;
+      if (!map[commId]) {
+        map[commId] = { topics: new Set(), interactions: [] };
+      }
+      if (edge.topic) map[commId].topics.add(edge.topic);
+      if (edge.fullText || edge.source) {
+        map[commId].interactions.push({
+          source: edge.source,
+          target: edge.target,
+          fullText: edge.fullText ?? '',
+          topic: edge.topic ?? '',
+          tweetUrl: edge.tweetUrl ?? '',
+        });
+      }
+    }
+
+    return map;
+  }, [data]);
+
+  const communityIds = useMemo(
+    () => Object.keys(clusterMap).map(Number),
+    [clusterMap],
+  );
+
+  const [activeCommunityId, setActiveCommunityId] = useState<number | null>(
+    null,
+  );
+
+  const currentCommId = activeCommunityId ?? communityIds[0] ?? 0;
+  const currentCluster = clusterMap[currentCommId] ?? {
+    topics: new Set(),
+    interactions: [],
+  };
+
+  const topicsList = Array.from(currentCluster.topics);
 
   return (
     <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] p-6 lg:p-8">
@@ -43,72 +75,95 @@ const SNAConversation: React.FC = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex bg-slate-100/50 p-1 rounded-xl w-full md:w-auto overflow-x-auto shrink-0 border border-slate-200/50">
-          {(
-            Object.keys(mockClusterData) as Array<keyof typeof mockClusterData>
-          ).map((cluster) => (
-            <button
-              key={cluster}
-              onClick={() => setActiveCluster(cluster)}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap outline-none ${
-                activeCluster === cluster
-                  ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
-              }`}
-            >
-              {cluster}
-            </button>
-          ))}
-        </div>
+        {communityIds.length > 0 && (
+          <div className="flex bg-slate-100/50 p-1 rounded-xl w-full md:w-auto overflow-x-auto shrink-0 border border-slate-200/50">
+            {communityIds.map((commId) => (
+              <button
+                key={commId}
+                type="button"
+                onClick={() => setActiveCommunityId(commId)}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap outline-none ${
+                  currentCommId === commId
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50'
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                }`}
+              >
+                Community {commId}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Active Cluster Context Header */}
-      <div className="mb-6 p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in duration-300">
-        <div>
-          <h4 className="text-sm font-bold tracking-widest text-slate-400 uppercase mb-1">
-            Algorithmic Topic
-          </h4>
-          <span className="text-lg font-black text-slate-800 tracking-tight">
-            {mockClusterData[activeCluster].topic}
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {mockClusterData[activeCluster].keywords.map((kw) => (
-            <span
-              key={kw}
-              className="px-3 py-1 bg-white border border-slate-200 shadow-sm text-xs font-bold text-slate-600 rounded-full"
-            >
-              #{kw}
+      {communityIds.length > 0 && (
+        <div className="mb-6 p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in duration-300">
+          <div>
+            <h4 className="text-sm font-bold tracking-widest text-slate-400 uppercase mb-1">
+              Algorithmic Topics
+            </h4>
+            <span className="text-lg font-black text-slate-800 tracking-tight">
+              {topicsList.length > 0
+                ? topicsList.slice(0, 3).join(', ')
+                : `Community ${currentCommId} Dialogue`}
             </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Tweet Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[400px] w-full items-start">
-        {mockClusterData[activeCluster].tweets.map((tweetId, index) => (
-          <div
-            key={`${activeCluster}-${index}-${tweetId}`}
-            className="animate-in fade-in zoom-in-95 duration-500 h-full"
-          >
-            <TwitterTweetEmbed
-              tweetId={tweetId}
-              options={{
-                conversation: 'none',
-                cards: 'hidden',
-                align: 'center',
-                width: '100%',
-              }}
-            />
           </div>
+          <div className="flex flex-wrap gap-2">
+            {topicsList.map((kw) => (
+              <span
+                key={kw}
+                className="px-3 py-1 bg-white border border-slate-200 shadow-sm text-xs font-bold text-slate-600 rounded-full"
+              >
+                #{kw}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Interaction List */}
+      <div className="space-y-4">
+        {currentCluster.interactions.slice(0, 8).map((item, index) => (
+          <article
+            key={`${currentCommId}-${index}`}
+            className="p-5 rounded-2xl border border-slate-100 bg-white shadow-sm"
+          >
+            <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+              <span className="font-bold text-slate-700">
+                @{item.source || 'user'} → @{item.target || 'user'}
+              </span>
+              {item.topic && (
+                <span className="bg-slate-100 px-2 py-0.5 rounded text-[11px] font-semibold text-slate-600">
+                  #{item.topic}
+                </span>
+              )}
+            </div>
+            {item.fullText && (
+              <p className="text-sm text-slate-800 leading-relaxed">
+                {item.fullText}
+              </p>
+            )}
+            {item.tweetUrl && (
+              <a
+                href={item.tweetUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline"
+              >
+                <ExternalLink size={12} />
+                View Original Interaction
+              </a>
+            )}
+          </article>
         ))}
       </div>
 
-      {mockClusterData[activeCluster].tweets.length === 0 && (
+      {currentCluster.interactions.length === 0 && (
         <div className="w-full h-64 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-100 rounded-2xl">
           <MessageCircle size={32} className="mb-2 opacity-50" />
           <span className="text-sm font-medium">
-            No representative tweets available
+            No representative interactions available for Community{' '}
+            {currentCommId}
           </span>
         </div>
       )}
