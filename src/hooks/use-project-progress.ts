@@ -10,6 +10,8 @@ interface ProgressEvent {
   stage?: string | null;
   progress: number;
   crawledTweets?: number;
+  totalTweets?: number;
+  jobId?: string | null;
   error?: { stage: string; message: string } | null;
 }
 
@@ -42,19 +44,59 @@ export const useProjectProgress = (
   const [error, setError] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const retryCountRef = useRef(0);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    let finished = false;
+
+    const stopPolling = () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+
+    const clearRetryTimeout = () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+    };
+
+    const startPolling = () => {
+      if (pollIntervalRef.current) return;
+
+      pollIntervalRef.current = setInterval(() => {
+        void (async () => {
+          const updated = await fetchProjectById(workspaceId, projectId, true);
+          if (
+            updated &&
+            TERMINAL_STATUSES.includes(updated.processing.status)
+          ) {
+            stopPolling();
+          }
+        })();
+      }, 5000);
+    };
+
     if (!project) {
-      fetchProjectById(workspaceId, projectId);
-      return;
+      void fetchProjectById(workspaceId, projectId, true);
+      return () => {
+        cancelled = true;
+      };
     }
 
     if (TERMINAL_STATUSES.includes(project.processing.status)) {
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     const connect = () => {
+      if (cancelled || finished) return;
+
       const url = projectApi.getProgressStreamUrl(workspaceId, projectId);
       const source = new EventSource(url);
       eventSourceRef.current = source;
@@ -66,27 +108,36 @@ export const useProjectProgress = (
       };
 
       source.onmessage = (event) => {
+        if (cancelled || finished) return;
+
         try {
           const data: ProgressEvent = JSON.parse(event.data);
           applyProgressEvent(projectId, data);
 
           if (TERMINAL_STATUSES.includes(data.status)) {
+            finished = true;
             source.close();
+            eventSourceRef.current = null;
+            clearRetryTimeout();
+            stopPolling();
             setIsConnected(false);
           }
         } catch {
-          // ignore malformed
+          // ignore malformed or heartbeat frames
         }
       };
 
       source.onerror = () => {
+        if (cancelled || finished) return;
+
         setIsConnected(false);
         source.close();
+        eventSourceRef.current = null;
 
         if (retryCountRef.current < 3) {
           const backoff = Math.pow(2, retryCountRef.current) * 1000;
           retryCountRef.current += 1;
-          setTimeout(connect, backoff);
+          retryTimeoutRef.current = setTimeout(connect, backoff);
         } else {
           setError('Connection lost. Falling back to polling.');
           startPolling();
@@ -94,31 +145,17 @@ export const useProjectProgress = (
       };
     };
 
-    const startPolling = () => {
-      if (pollIntervalRef.current) return;
-
-      pollIntervalRef.current = setInterval(async () => {
-        const updated = await fetchProjectById(workspaceId, projectId);
-        if (updated && TERMINAL_STATUSES.includes(updated.processing.status)) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-        }
-      }, 5000);
-    };
-
     connect();
 
     return () => {
+      cancelled = true;
+      finished = true;
+      clearRetryTimeout();
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
-      }
+      stopPolling();
       retryCountRef.current = 0;
       setIsConnected(false);
     };

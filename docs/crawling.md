@@ -1,18 +1,22 @@
 # Technical Documentation: Twitter/X Crawling Pipeline
 
 ## 1. Feature Overview
-The Crawling module fetches tweets from Twitter/X based on project keywords and date ranges using Scweet (curl-cffi & Playwright headless browser). The process is handled asynchronously via BullMQ queues and NestJS gateway, and results are stored in MongoDB shared database.
+
+The crawling module fetches tweets from X based on project keywords and date ranges. The crawler is implemented with Playwright (Chromium) and runs inside the FastAPI AI service. NestJS queues the crawl, polls the AI job, persists tweets to MongoDB, and then chains topic modeling. The frontend follows progress through an SSE stream that reports the persisted project state.
 
 ## 2. Architecture Components
-- **Frontend (`socialabs-fe`)**: Initiates crawl via `projectApi.recrawlProject()`, listens to SSE stream progress events via `useProjectProgress()`.
-- **NestJS Gateway (`socialabs-be-nest`)**:
-  - `CrawlQueue` & `CrawlProcessor`: Handles queued crawling background jobs.
-  - `TweetModel` (Mongoose): Stores raw tweets into shared `tweets` collection.
-  - `ProjectProgressGateway`: Emits progress SSE events to FE.
-- **FastAPI AI Service (`socialabs-be-ai`)**:
-  - `Scweet` / `processor.py`: Executes authenticated manifest scraping and tweet extraction from X.
 
-## 3. Data Flow Diagram (Mermaid)
+- **Frontend (`socialabs-fe`)**: Starts a crawl via `projectApi.recrawlProject()` / project creation, then follows progress with `useProjectProgress()` and `GET /workspaces/:wId/projects/:pId/progress/stream`.
+- **NestJS Gateway (`socialabs-be-nest`)**:
+  - `CrawlProcessor` (`crawl-project` queue): Calls the AI crawl endpoint, stores tweets, updates project progress, and queues topic modeling.
+  - `ProjectController` SSE: Streams `status`, `stage`, `progress`, `crawledTweets`, `totalTweets`, and `error` read from the project document.
+  - `TweetModel` (Mongoose): Stores raw tweets in the shared `tweets` collection.
+- **FastAPI AI Service (`socialabs-be-ai`)**:
+  - `app/domains/crawl/playwright_crawler.py`: Launches Chromium, injects the `X_AUTH_TOKEN` cookie, intercepts X GraphQL `SearchTimeline` responses while scrolling the Latest search, and returns normalized tweets.
+  - `app/domains/crawl/processor.py`: BullMQ worker that runs the crawler and reports progress.
+  - Crawl API: `POST /api/crawl/twitter`, `GET /api/crawl/twitter/:job_id`.
+
+## 3. Data Flow
 
 ```mermaid
 sequenceDiagram
@@ -22,28 +26,42 @@ sequenceDiagram
     participant Nest as NestJS Gateway
     participant Redis as BullMQ / Redis
     participant AI as FastAPI AI Service
-    participant Mongo as MongoDB (tweets)
+    participant Mongo as MongoDB
 
-    User->>FE: Click "Recrawl" / Create Project
-    FE->>Nest: POST /workspaces/:wId/projects/:pId/recrawl
-    Nest->>Nest: Update Project Status to CRAWLING
-    Nest->>Redis: Add job to 'scweet-crawl' queue
-    Nest-->>FE: Return { status: true, data: true }
-
-    Redis->>AI: Scweet Crawl Worker picks job
-    AI->>AI: Fetch X main.js & scrape auth manifest
-    AI->>AI: Crawl tweets by keyword & date range
-    AI-->>Nest: Job Completed with Tweet Array
-
-    Nest->>Mongo: Insert raw tweets into 'tweets' collection (extract userIdStr)
-    Nest->>Nest: Trigger next chained queue ('topic-modeling')
-    Nest->>FE: SSE Progress Stream Event (stage: 'CRAWLING', progress: 100%)
-    FE->>User: Update UI progress & dataset table
+    User->>FE: Create Project / Recrawl
+    FE->>Nest: POST /workspaces/:wId/projects or /:pId/recrawl
+    Nest->>Redis: Add job to 'crawl-project'
+    Nest-->>FE: Project created / recrawl accepted
+    FE->>Nest: GET /progress/stream (SSE)
+    Redis->>Nest: Crawl worker runs
+    Nest->>AI: POST /api/crawl/twitter
+    AI->>AI: Playwright Chromium + X GraphQL interception
+    loop While crawling
+      Nest->>AI: GET /api/crawl/twitter/:jobId
+      AI-->>Nest: state + progress + tweets_found
+      Nest->>Mongo: Persist progress and crawled tweets
+      Nest-->>FE: SSE event with persisted progress
+    end
+    AI-->>Nest: COMPLETED + tweets
+    Nest->>Mongo: Insert tweets
+    Nest->>Redis: Add 'topic-modeling' job
+    Nest-->>FE: SSE stage MODELING
+    Redis->>Nest: Topic modeling completes
+    Nest->>Mongo: status COMPLETED, topicCount
+    Nest-->>FE: SSE status COMPLETED
+    FE->>User: Navigate to overview
 ```
 
-## 4. Data Contracts & Interfaces
+## 4. Data Contracts
+
+### Crawl API (AI service)
+
+- `POST /api/crawl/twitter` body: `{ keyword, since, until, lang, limit? }`.
+  - Omit `limit` (or `null`) to fetch everything X returns; the crawler keeps a safety cap of 300 scrolls.
+- `GET /api/crawl/twitter/:job_id` response data: `{ state, progress, tweets_found, tweets?, error? }`.
 
 ### NestJS Tweet Schema
+
 ```ts
 export interface Tweet {
   id: string;
@@ -51,7 +69,7 @@ export interface Tweet {
   tweetId: string;
   fullText: string;
   createdAtTwitter: Date;
-  userIdStr: string; // Extracted screen_name or user_id
+  userIdStr: string; // screen name extracted from tweetUrl when available
   tweetUrl: string;
   quoteCount: number;
   replyCount: number;
@@ -60,6 +78,24 @@ export interface Tweet {
 }
 ```
 
+### SSE progress payload
+
+```json
+{
+  "projectId": "…",
+  "status": "CRAWLING | MODELING | COMPLETED | FAILED",
+  "stage": "CRAWLING | MODELING | null",
+  "progress": 0,
+  "crawledTweets": 0,
+  "totalTweets": 0,
+  "jobId": "…",
+  "error": { "stage": "CRAWLING", "message": "…" }
+}
+```
+
 ## 5. Troubleshooting & Notes for Developers
-- **Scweet Manifest Errors**: Scweet relies on dynamic regex parsing of `x.com/main.js`. Ensure valid `SCWEET_AUTH_TOKEN` is configured in `socialabs-be-ai/.env`.
-- **Username Extraction**: NestJS `CrawlProcessor` parses `screen_name` directly from `tweetUrl` regex `/(?:x\.com|twitter\.com)\/([^/]+)\/status/i` if `user_id_str` is unavailable.
+
+- **Authentication**: set `X_AUTH_TOKEN` in `socialabs-be-ai/.env` with a fresh `auth_token` cookie from an authenticated X session. `SCWEET_AUTH_TOKEN` is accepted as a legacy fallback only.
+- **No results**: X returns zero results when `lang:id` is combined with date filters; the crawler normalizes `id` to `in`.
+- **Username Extraction**: NestJS `CrawlProcessor` parses the screen name from `tweetUrl` with the regex `/(?:x\.com|twitter\.com)\/([^/]+)\/status/i` when `user_id_str` is not a handle.
+- **SSE**: the stream reads the project document every second (keeps the connection alive at least every 15 seconds) and completes on `COMPLETED`/`FAILED`. If the stream drops, the frontend retries and then falls back to forced polling.

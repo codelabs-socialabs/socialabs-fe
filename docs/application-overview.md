@@ -52,7 +52,7 @@ flowchart TD
 
 ### Stage Summary
 
-1. **Crawling (`CRAWLING`)**: Scweet scraper extracts tweets by keyword & date range into `tweets` collection.
+1. **Crawling (`CRAWLING`)**: Playwright Chromium crawler extracts tweets by keyword & date range into the `tweets` collection.
 2. **Topic Modeling (`MODELING`)**: ETM algorithm clusters tweets into 1-based topic IDs with AI context generation.
 3. **Sentiment Analysis**: CNN / CNN-LSTM classifies text into Positive/Negative sentiments and generates word frequencies.
 4. **Emotion Classification**: CNN / BiLSTM categorizes text into 6 emotions (`Anger`, `Fear`, `Joy`, `Love`, `Sad`, `Neutral`).
@@ -71,14 +71,14 @@ sequenceDiagram
     participant Mongo as MongoDB Shared DB
 
     User->>Gateway: POST /projects (Create Project & Start Pipeline)
-    Gateway->>Mongo: Save Project (status: CRAWLING, stage: CRAWLING, progress: 0%)
-    Gateway->>Queue: Add job to 'scweet-crawl'
+    Gateway->>Mongo: Save Project (status: CREATED)
+    Gateway->>Queue: Add job to 'crawl-project'
     Gateway-->>User: Project Created
 
-    Note over Gateway,User: SSE Progress Stream Listener Active (stage: CRAWLING)
-    Queue->>AISvc: Execute Crawl Scraper
-    AISvc->>Mongo: Insert raw tweets into 'tweets'
-    AISvc-->>Gateway: Crawl Completed
+    Note over Gateway,User: SSE Progress Stream reads persisted project state
+    Queue->>AISvc: POST /crawl/twitter (Playwright Chromium)
+    AISvc-->>Gateway: Crawl progress + tweets
+    Gateway->>Mongo: Persist progress and insert raw tweets into 'tweets'
     Gateway->>Queue: Add job to 'topic-modeling' (chained)
 
     Queue->>AISvc: POST /topics/topic-modelling
@@ -122,12 +122,12 @@ sequenceDiagram
 
 ## 4. Communication & Real-time Protocols
 
-| Protocol                 | Usage                                              | Implementation                                                           |
-| ------------------------ | -------------------------------------------------- | ------------------------------------------------------------------------ |
-| **REST API**             | Auth, CRUD operations, static analytics fetches    | Axios client in FE, Express controllers in NestJS                        |
-| **BullMQ + Redis**       | Background job queueing & chained execution        | `@nestjs/bullmq` workers in NestJS                                       |
-| **SSE (Progress)**       | Global project stage & percentage progress updates | `@Sse()` RxJS Observable endpoint in NestJS, EventSource in FE           |
-| **SSE (Chat Streaming)** | Token-by-token real-time LLM typing response       | Express `res.write` stream pipe in NestJS, `ReadableStream` reader in FE |
+| Protocol                 | Usage                                             | Implementation                                                                |
+| ------------------------ | ------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **REST API**             | Auth, CRUD operations, static analytics fetches   | Axios client in FE, Express controllers in NestJS                             |
+| **BullMQ + Redis**       | Background job queueing & chained execution       | `@nestjs/bullmq` workers in NestJS                                            |
+| **SSE (Progress)**       | Project status, stage, progress, and tweet counts | `@Sse()` RxJS Observable polling persisted state in NestJS, EventSource in FE |
+| **SSE (Chat Streaming)** | Token-by-token real-time LLM typing response      | Express `res.write` stream pipe in NestJS, `ReadableStream` reader in FE      |
 
 ## 5. Shared MongoDB Strategy
 

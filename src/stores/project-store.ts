@@ -64,6 +64,8 @@ interface ProjectState {
       stage?: string | null;
       progress: number;
       crawledTweets?: number;
+      totalTweets?: number;
+      jobId?: string | null;
       error?: { stage: string; message: string } | null;
     },
   ) => void;
@@ -78,6 +80,7 @@ interface ProjectState {
   fetchProjectById: (
     workspaceId: string,
     projectId: string,
+    force?: boolean,
   ) => Promise<Project | null>;
 
   createProject: (
@@ -326,12 +329,16 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }
   },
 
-  fetchProjectById: async (workspaceId, projectId): Promise<Project | null> => {
+  fetchProjectById: async (
+    workspaceId,
+    projectId,
+    force = false,
+  ): Promise<Project | null> => {
     const existingProject = get().projectsByWorkspace[workspaceId]?.find(
       (project) => project.id === projectId,
     );
 
-    if (existingProject) {
+    if (existingProject && !force) {
       return existingProject;
     }
 
@@ -629,9 +636,14 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
                   status: event.status,
                   stage: (event.stage as ProjectStage) ?? null,
                   progress: event.progress,
+                  jobId:
+                    event.jobId !== undefined
+                      ? event.jobId
+                      : (project.processing.jobId ?? null),
                   error: event.error ?? null,
                 },
                 crawledTweets: event.crawledTweets ?? project.crawledTweets,
+                totalTweets: event.totalTweets ?? project.totalTweets,
                 tweetsRetrieved: event.crawledTweets ?? project.tweetsRetrieved,
                 status: event.status,
               } as unknown as Project)

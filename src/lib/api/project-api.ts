@@ -152,6 +152,7 @@ export const projectApi = {
       {
         method: 'GET',
         requireAuth: true,
+        cache: 'no-store',
       },
     );
   },
@@ -360,8 +361,10 @@ export const projectApi = {
   },
 
   getProgressStreamUrl: (workspaceId: string, projectId: string): string => {
-    const token = tokenStorage.getAccessToken();
-    return `${env.apiBaseUrl}/workspaces/${workspaceId}/projects/${projectId}/progress/stream?token=${token}`;
+    const token = tokenStorage.getAccessToken() ?? '';
+    return `${env.apiBaseUrl}/workspaces/${workspaceId}/projects/${projectId}/progress/stream?token=${encodeURIComponent(
+      token,
+    )}`;
   },
 
   getConversations: async (
